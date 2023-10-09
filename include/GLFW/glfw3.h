@@ -925,7 +925,7 @@ extern "C" {
   *  Window has titlebar [window hint](@ref GLFW_TITLEBAR_hint) and
   *  [window attribute](@ref GLFW_TITLEBAR_attrib).
   * 
-  *  NOTE: Added by Hazel
+  *  NOTE: Added by Bath
   */
 #define GLFW_TITLEBAR               0x00C2000D
 
