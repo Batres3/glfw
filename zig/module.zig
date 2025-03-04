@@ -3,6 +3,7 @@ const builtin = @import("builtin");
 pub const c = @cImport({
     @cInclude("glfw3.h");
 });
+const internal = @cImport(@cInclude("../../src/internal.h"));
 pub const Input = @import("input.zig");
 pub const Hint = @import("hint.zig");
 // Some simple zig bindings
@@ -13,11 +14,7 @@ pub const Error = err.Error;
 pub fn errorCheck() Error!void {
     if (builtin.mode == .Debug) {
         var description: [*c]const u8 = undefined;
-        err.toZigError(c.glfwGetError(&description)) catch |e| {
-            std.debug.print("glfw error={s} message={s}", .{ @errorName(e), description });
-            return e;
-        };
-        return;
+        return err.toZigError(c.glfwGetError(&description));
     }
 }
 
@@ -30,12 +27,18 @@ pub const Version = struct {
 // These are completely unnecessary, but glfw offers them so why not
 pub const True = 1;
 pub const False = 0;
+// Utility structs for functions
+pub const Position = struct { x: c_int, y: c_int };
+pub const Size = struct { width: c_uint, height: c_uint };
+pub const Workarea = struct { position: Position, size: Size };
+pub const FrameSize = struct { left: c_int, right: c_int, top: c_int, bottom: c_int };
+pub const Scale = struct { x: f32, y: f32 };
+pub const VideoMode = struct { size: Size, bits: struct { r: c_int, g: c_int, b: c_int }, refreshRate: c_int };
+pub const GammaRamp = c.GLFWgammaramp;
 
 pub const Monitor = @import("monitor.zig");
 pub const Window = @import("window.zig");
 pub const Cursor = c.GLFWcursor;
-pub const VideoMode = c.GLFWvidmode;
-pub const GammaRamp = c.GLFWgammaramp;
 pub const Image = c.GLFWimage;
 
 pub fn init() Error!void {
@@ -64,6 +67,9 @@ pub fn getVersionString() [*:0]const u8 {
     return c.glfwGetVersionString();
 }
 
+fn requireInit() Error!void {
+    if (internal._glfw.initialized == 0) return Error.NotInitialized;
+}
 /// This should not be used, one of the main benefits of using zig is precisely not needing to use this,
 /// it is exposed in case someone needs it, but consider skipping this and simply using the given glfw functions,
 /// which have included error checks ()
@@ -71,296 +77,26 @@ pub fn setErrorCallback(callback: c.GLFWerrorfun) c.GLFWerrorfun {
     return c.glfwSetErrorCallback(callback);
 }
 
-// Monitors
-pub fn getMonitors() Error!?[]const Monitor {
-    var count: c_int = 0;
-    const res = c.glfwGetMonitors(&count) orelse return Error.NotInitialized;
-    var monitors: [count]Monitor = undefined;
-    for (res, 0..count) |item, i| {
-        monitors[i] = .{item};
-    }
-
-    return monitors;
+pub fn pollEvents() Error!void {
+    try requireInit();
+    internal._glfw.platform.pollEvents.?();
 }
 
-pub fn getPrimaryMonitor() Error!*Monitor {
-    const res = c.glfwGetPrimaryMonitor() orelse return Error.NotInitialized;
-    return .{res};
+pub fn waitEvents() Error!void {
+    try requireInit();
+    internal._glfw.platform.waitEvents.?();
 }
 
-pub fn setMonitorCallback(callback: c.GLFWmonitorfun) Error!c.GLFWmonitorfun {
-    const res = c.glfwSetMonitorCallback(callback);
-    try errorCheck();
-    return res;
+pub fn waitEventsTimeout(timeout: f64) Error!void {
+    try requireInit();
+    if (timeout != timeout or timeout < 0) return Error.InvalidValue;
+    internal._glfw.platform.waitEventsTimeout.?(timeout);
 }
-//
-// pub fn getVideoModes(monitor: ?*Monitor, count: *c_int) ?[*]Vidmode {
-//     const res = c.glfwGetVideoModes(monitor, count);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn getVideoMode(monitor: ?*Monitor) ?*Vidmode {
-//     const res = getVideoMode(monitor);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setGamma(monitor: ?*Monitor, gamma: f32) void {
-//     c.glfwSetGamma(monitor, gamma);
-//     errorCheck();
-// }
-//
-// pub fn getGammaRamp(monitor: ?*Monitor) ?*Gammaramp {
-//     const res = c.glfwGetGammaRamp(monitor);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setGammaRamp(monitor: ?*Monitor, ramp: ?*Gammaramp) void {
-//     c.glfwSetGammaRamp(monitor, ramp);
-//     errorCheck();
-// }
-//
-// pub fn defaultWindowHints() void {
-//     c.glfwDefaultWindowHints();
-//     errorCheck();
-// }
-//
-// pub fn windowHint(hint: WindowHint, value: c_int) void {
-//     c.glfwWindowHint((hint), value);
-//     errorCheck();
-// }
-//
-// pub fn windowHintString(hint: WindowHint, value: [*:0]const u8) void {
-//     c.glfwWindowHintString((hint), value);
-//     errorCheck();
-// }
-//
-// pub fn createWindow(width: c_int, height: c_int, title: [*:0]const u8, monitor: ?*Monitor, share: ?*Window) !*Window {
-//     const res = c.glfwCreateWindow(width, height, title, monitor, share);
-//     errorCheck();
-//     if (res == null) {
-//         return GLFWError.PlatformError;
-//     }
-//     return res.?;
-// }
-//
-// pub fn destroyWindow(window: ?*Window) void {
-//     c.glfwDestroyWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn windowShouldClose(window: ?*Window) bool {
-//     const res = c.glfwWindowShouldClose(window);
-//     errorCheck();
-//     return res != 0;
-// }
-//
-// pub fn setWindowShouldClose(window: ?*Window, value: bool) void {
-//     c.glfwSetWindowShouldClose(window, @intFromBool(value));
-//     errorCheck();
-// }
-//
-// pub fn setWindowTitle(window: ?*Window, title: [*:0]const u8) void {
-//     c.glfwSetWindowTitle(window, title);
-//     errorCheck();
-// }
-//
-// pub fn setWindowIcon(window: ?*Window, count: c_int, images: ?[*]Image) void {
-//     c.glfwSetWindowIcon(window, count, images);
-//     errorCheck();
-// }
-//
-// pub fn getWindowPos(window: ?*Window, xpos: *c_int, ypos: *c_int) void {
-//     c.glfwGetWindowPos(window, xpos, ypos);
-//     errorCheck();
-// }
-//
-// pub fn setWindowPos(window: ?*Window, xpos: c_int, ypos: c_int) void {
-//     c.glfwSetWindowPos(window, xpos, ypos);
-//     errorCheck();
-// }
-//
-// pub fn getWindowSize(window: ?*Window, width: *c_int, height: *c_int) void {
-//     c.glfwGetWindowSize(window, width, height);
-//     errorCheck();
-// }
-//
-// pub fn setWindowSizeLimits(window: ?*Window, minwidth: c_int, minheight: c_int, maxwidth: c_int, maxheight: c_int) void {
-//     c.glfwSetWindowSizeLimits(window, minwidth, minheight, maxwidth, maxheight);
-//     errorCheck();
-// }
-//
-// pub fn setWindowAspectRatio(window: ?*Window, numer: c_int, denom: c_int) void {
-//     c.glfwSetWindowAspectRatio(window, numer, denom);
-//     errorCheck();
-// }
-//
-// pub fn setWindowSize(window: ?*Window, width: c_int, height: c_int) void {
-//     c.glfwSetWindowSize(window, width, height);
-//     errorCheck();
-// }
-//
-// pub fn getFramebufferSize(window: ?*Window, width: *c_int, height: *c_int) void {
-//     c.glfwGetFramebufferSize(window, width, height);
-//     errorCheck();
-// }
-//
-// pub fn getWindowFrameSize(window: ?*Window, left: *c_int, top: *c_int, right: *c_int, bottom: *c_int) void {
-//     c.glfwGetWindowFrameSize(window, left, top, right, bottom);
-//     errorCheck();
-// }
-//
-// pub fn getWindowContentScale(window: ?*Window, xscale: *f32, yscale: *f32) void {
-//     c.glfwGetWindowContentScale(window, xscale, yscale);
-//     errorCheck();
-// }
-//
-// pub fn getWindowOpacity(window: ?*Window) f32 {
-//     const res = c.glfwGetWindowOpacity(window);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setWindowOpacity(window: ?*Window, opacity: f32) void {
-//     c.glfwSetWindowOpacity(window, opacity);
-//     errorCheck();
-// }
-//
-// pub fn iconifyWindow(window: ?*Window) void {
-//     c.glfwIconifyWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn restoreWindow(window: ?*Window) void {
-//     c.glfwRestoreWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn maximizeWindow(window: ?*Window) void {
-//     c.glfwMaximizeWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn showWindow(window: ?*Window) void {
-//     c.glfwShowWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn hideWindow(window: ?*Window) void {
-//     c.glfwHideWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn focusWindow(window: ?*Window) void {
-//     c.glfwFocusWindow(window);
-//     errorCheck();
-// }
-//
-// pub fn requestWindowAttention(window: ?*Window) void {
-//     c.glfwRequestWindowAttention(window);
-//     errorCheck();
-// }
-//
-// pub fn getWindowMonitor(window: ?*Window) ?*Monitor {
-//     const res = c.glfwGetWindowMonitor(window);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setWindowMonitor(window: ?*Window, monitor: ?*Monitor, xpos: c_int, ypos: c_int, width: c_int, height: c_int, refreshRate: c_int) void {
-//     c.glfwSetWindowMonitor(window, monitor, xpos, ypos, width, height, refreshRate);
-//     errorCheck();
-// }
-//
-// pub fn getWindowAttrib(window: ?*Window, attrib: WindowHint) c_int {
-//     const res = c.glfwGetWindowAttrib(window, (attrib));
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setWindowAttrib(window: ?*Window, attrib: WindowHint, value: c_int) void {
-//     c.glfwSetWindowAttrib(window, (attrib), value);
-//     errorCheck();
-// }
-//
-// pub fn setWindowUserPointer(window: ?*Window, pointer: *anyopaque) void {
-//     c.glfwSetWindowUserPointer(window, pointer);
-//     errorCheck();
-// }
-//
-// pub fn getWindowUserPointer(window: ?*Window) ?*anyopaque {
-//     const res = c.glfwGetWindowUserPointer(window);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn setWindowPosCallback(window: ?*Window, callback: WindowPosFun) WindowPosFun {
-//     const res = c.glfwSetWindowPosCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowSizeCallback(window: ?*Window, callback: WindowSizeFun) WindowSizeFun {
-//     const res = c.glfwSetWindowSizeCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowCloseCallback(window: ?*Window, callback: WindowCloseFun) WindowCloseFun {
-//     const res = c.glfwSetWindowCloseCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowRefreshCallback(window: ?*Window, callback: WindowRefreshFun) WindowRefreshFun {
-//     const res = c.glfwSetWindowRefreshCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowFocusCallback(window: ?*Window, callback: WindowFocusFun) WindowFocusFun {
-//     const res = c.glfwSetWindowFocusCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowIconifyCallback(window: ?*Window, callback: WindowIconifyFun) WindowIconifyFun {
-//     const res = c.glfwSetWindowIconifyCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowMaximizeCallback(window: ?*Window, callback: WindowMaximizeFun) WindowMaximizeFun {
-//     const res = c.glfwSetWindowMaximizeCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setFramebufferSizeCallback(window: ?*Window, callback: FramebufferSizeFun) FramebufferSizeFun {
-//     const res = c.glfwSetFramebufferSizeCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-// pub fn setWindowContentScaleCallback(window: ?*Window, callback: WindowContentScaleFun) WindowContentScaleFun {
-//     const res = c.glfwSetWindowContentScaleCallback(window, callback);
-//     errorCheck();
-//     return res;
-// }
-//
-// pub fn pollEvents() void {
-//     c.glfwPollEvents();
-//     errorCheck();
-// }
-//
-// pub fn waitEvents() void {
-//     c.glfwWaitEvents();
-//     errorCheck();
-// }
-//
-// pub fn waitEventsTimeout(timeout: f64) void {
-//     c.glfwWaitEventsTimeout(timeout);
-//     errorCheck();
-// }
-//
-// pub fn postEmptyEvent() void {
-//     c.glfwPostEmptyEvent();
-//     errorCheck();
-// }
+
+pub fn postEmptyEvent() Error!void {
+    try requireInit();
+    internal._glfw.platform.postEmptyEvent.?();
+}
 //
 // //Depending on what your input mode is, you can change to true/false or one of the attribute enums
 // pub fn getInputMode(window: ?*Window, mode: InputMode) c_int {
