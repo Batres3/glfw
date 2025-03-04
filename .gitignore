@@ -104,3 +104,4 @@ tests/windows
 
 # Zig
 .zig-cache/
+zig-out/
