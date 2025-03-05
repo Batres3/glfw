@@ -17,9 +17,10 @@ pub const Version = struct {
 pub const True = 1;
 pub const False = 0;
 // Utility structs for functions
-pub const Position = struct { x: c_int, y: c_int };
+pub const Position = struct { x: f64, y: f64 };
+pub const iPosition = struct { x: c_int, y: c_int };
 pub const Size = struct { width: c_uint, height: c_uint };
-pub const Workarea = struct { position: Position, size: Size };
+pub const Workarea = struct { position: iPosition, size: Size };
 pub const FrameSize = struct { left: c_int, right: c_int, top: c_int, bottom: c_int };
 pub const Scale = struct { x: f32, y: f32 };
 pub const VideoMode = struct { size: Size, bits: struct { r: c_int, g: c_int, b: c_int }, refreshRate: c_int };

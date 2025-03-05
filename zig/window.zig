@@ -1,9 +1,10 @@
 const std = @import("std");
 const internal = @import("internal.zig");
+const input = @import("input.zig");
 const c = internal.c;
 const _c = internal._c;
 const glfw = internal.glfw;
-const Position = glfw.Position;
+const Position = glfw.iPosition;
 const Size = glfw.Size;
 const Workarea = glfw.Workarea;
 const Error = glfw.Error;
@@ -357,3 +358,22 @@ pub const InputMode = enum(c_int) {
         Captured = c.GLFW_CURSOR_CAPTURED,
     };
 };
+
+pub fn getKey(self: *Window, key: input.Key) input.State {
+    const k: usize = @intCast(@intFromEnum(key));
+    if (self.handle.keys[k] == 3) { // _GLFW_STICK
+        // Sticky mode, so we release
+        self.handle.keys[k] = @intFromEnum(input.State.Release);
+        return .Press;
+    }
+    return @enumFromInt(self.handle.keys[k]);
+}
+
+pub fn getMouseButton(self: *Window, key: input.Mouse) input.State {
+    const k: usize = @intCast(@intFromEnum(key));
+    if (self.handle.mouseButtons[k] == 3) {
+        self.handle.mouseButtons[k] = @intFromEnum(input.State.Release);
+        return .Press;
+    }
+    return @enumFromInt(self.handle.mouseButtons[k]);
+}

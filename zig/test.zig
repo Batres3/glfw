@@ -179,5 +179,25 @@ test "glfw window" {
             try expect(window.getRawMouseMotion());
             try window.setRawMouseMotion(false);
         }
+
+        try expect(window.getKey(.A) == glfw.Input.State.Release);
+        try expect(window.getMouseButton(.Left) == glfw.Input.State.Release);
+
+        _ = window.getCursorPosition();
+        try window.setCursorPosition(.{ .x = 0, .y = 0 });
     }
+}
+
+test "glfw input" {
+    try glfw.init();
+    defer glfw.deinit();
+
+    try expect(std.mem.eql(u8, "a", glfw.Input.Key.getName(.A).?));
+    // inline for (std.meta.fields(glfw.Input.Key)) |key| {
+    //     if (glfw.Input.Key.getName(@enumFromInt(key.value))) |k| {
+    //         std.debug.print("{s}, {s}\n", .{ k, key.name });
+    //     } else {
+    //         std.debug.print("null, {s}\n", .{key.name});
+    //     }
+    // }
 }
