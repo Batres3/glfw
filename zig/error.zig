@@ -18,10 +18,10 @@ pub const Error = error{
     PlatformUnavailable,
 };
 
-pub fn toZigError(err: c_int) Error!void {
+pub fn toZigError(err: c_int) ?Error {
     const code: ErrorCode = @enumFromInt(err);
     return switch (code) {
-        .NoError => {},
+        .NoError => null,
         .NotInitialized => Error.NotInitialized,
         .NoCurrentContext => Error.NoCurrentContext,
         .InvalidEnum => Error.InvalidEnum,

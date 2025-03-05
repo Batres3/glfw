@@ -11,13 +11,14 @@ const Error = glfw.Error;
 const Window = @This();
 const Monitor = @import("monitor.zig");
 const Hint = @import("hint.zig");
-const errorCheck = internal.errorCheck;
+const errorCheck = glfw.errorCheck;
 const requireInit = internal.requireInit;
 
 handle: *_c._GLFWwindow = undefined,
 
 // Static functions
 pub fn init(width: u16, height: u16, title: [:0]const u8, monitor: ?*Monitor, share: ?*Window) Error!Window {
+    requireInit();
     const h = c.glfwCreateWindow(
         @as(c_int, width),
         @as(c_int, height),
@@ -27,36 +28,36 @@ pub fn init(width: u16, height: u16, title: [:0]const u8, monitor: ?*Monitor, sh
     );
     _ = monitor;
     _ = share;
-    try errorCheck();
     if (h == null) return Error.PlatformError;
     return .{ .handle = @ptrCast(@alignCast(h.?)) };
 }
 
 pub fn deinit(self: *Window) void {
+    requireInit();
     c.glfwDestroyWindow(@ptrCast(self.handle));
 }
 
 // TODO: The only possible error for all of these functions is that glfw is not initialized
 // since they use a Window object, it must have been initialized, but it is possible that it was terminated
 // before this function is called, so we still require an error check. Figure out how to remove that.
-pub fn shouldClose(self: *Window) Error!bool {
-    try requireInit();
+pub fn shouldClose(self: *Window) bool {
+    requireInit();
     return self.handle.shouldClose != 0;
 }
 
-pub fn close(self: *Window, value: bool) Error!void {
-    try requireInit();
+pub fn close(self: *Window, value: bool) void {
+    requireInit();
     self.handle.shouldClose = value;
 }
 
-pub fn getTitle(self: *Window) Error![]const u8 {
-    try requireInit();
+pub fn getTitle(self: *Window) []const u8 {
+    requireInit();
     return std.mem.span(self.handle.title);
 }
 
 /// Try to avoid using this function, set the title when creating the window
-pub fn setTitle(self: *Window, title: [:0]const u8) Error!void {
-    try requireInit();
+pub fn setTitle(self: *Window, title: [:0]const u8) void {
+    requireInit();
     self.handle.title = _c._glfw_strdup(title);
     _c._glfw.platform.setWindowTitle.?(self.handle, title);
 }
@@ -66,29 +67,29 @@ pub fn setIcon(self: *Window, images: []const c.GLFWimage) Error!void {
     try errorCheck();
 }
 
-pub fn getPosition(self: *Window) Error!Position {
-    try requireInit();
+pub fn getPosition(self: *Window) Position {
+    requireInit();
     var pos: Position = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getWindowPos.?(self.handle, &pos.x, &pos.y);
     return pos;
 }
 
-pub fn setPosition(self: *Window, pos: Position) Error!void {
-    try requireInit();
+pub fn setPosition(self: *Window, pos: Position) void {
+    requireInit();
     if (self.handle.monitor != null) return;
     _c._glfw.platform.setWindowPos.?(self.handle, pos.x, pos.y);
 }
 
-pub fn getSize(self: *Window) Error!Size {
-    try requireInit();
+pub fn getSize(self: *Window) Size {
+    requireInit();
     var xsize: c_int = 0;
     var ysize: c_int = 0;
     _c._glfw.platform.getWindowSize.?(self.handle, &xsize, &ysize);
     return .{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
-pub fn setSize(self: *Window, size: Size) Error!void {
-    try requireInit();
+pub fn setSize(self: *Window, size: Size) void {
+    requireInit();
     self.handle.videoMode.width = @intCast(size.width);
     self.handle.videoMode.height = @intCast(size.height);
 
@@ -96,7 +97,7 @@ pub fn setSize(self: *Window, size: Size) Error!void {
 }
 
 pub fn setSizeLimits(self: *Window, minwidth: ?u32, minheight: ?u32, maxwidth: ?u32, maxheight: ?u32) Error!void {
-    try requireInit();
+    requireInit();
     if (maxwidth != null and maxheight != null and minwidth != null and minheight != null) {
         if (maxwidth.? < minwidth.? or maxheight.? < minheight.?) return Error.InvalidValue;
     }
@@ -116,8 +117,8 @@ pub fn setSizeLimits(self: *Window, minwidth: ?u32, minheight: ?u32, maxwidth: ?
     );
 }
 
-pub fn setAspectRatio(self: *Window, numer: ?u32, denom: ?u32) Error!void {
-    try requireInit();
+pub fn setAspectRatio(self: *Window, numer: ?u32, denom: ?u32) void {
+    requireInit();
     const n: c_int = if (numer) |num| @intCast(num) else -1;
     const d: c_int = if (denom) |num| @intCast(num) else -1;
 
@@ -128,101 +129,101 @@ pub fn setAspectRatio(self: *Window, numer: ?u32, denom: ?u32) Error!void {
     _c._glfw.platform.setWindowAspectRatio.?(self.handle, n, d);
 }
 
-pub fn getFramebufferSize(self: *Window) Error!Size {
-    try requireInit();
+pub fn getFramebufferSize(self: *Window) Size {
+    requireInit();
     var xsize: c_int = 0;
     var ysize: c_int = 0;
     _c._glfw.platform.getFramebufferSize.?(self.handle, &xsize, &ysize);
     return Size{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
-pub fn getFrameSize(self: *Window) Error!glfw.FrameSize {
-    try requireInit();
+pub fn getFrameSize(self: *Window) glfw.FrameSize {
+    requireInit();
     var f: glfw.FrameSize = .{ .left = 0, .right = 0, .top = 0, .bottom = 0 };
     _c._glfw.platform.getWindowFrameSize.?(self.handle, &f.left, &f.top, &f.right, &f.bottom);
     return f;
 }
 
-pub fn getContentScale(self: *Window) Error!glfw.Scale {
-    try requireInit();
+pub fn getContentScale(self: *Window) glfw.Scale {
+    requireInit();
     var scale: glfw.Scale = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getWindowContentScale.?(self.handle, &scale.x, &scale.y);
     return scale;
 }
 
-pub fn getOpacity(self: *Window) Error!f32 {
-    try requireInit();
+pub fn getOpacity(self: *Window) f32 {
+    requireInit();
     return _c._glfw.platform.getWindowOpacity.?(self.handle);
 }
 
 /// opacity is in [0, 1]
 pub fn setOpacity(self: *Window, opacity: f32) Error!void {
-    try requireInit();
+    requireInit();
     if (opacity != opacity or opacity < 0 or opacity > 1) return Error.InvalidValue;
     _c._glfw.platform.setWindowOpacity.?(self.handle, opacity);
 }
 
-pub fn iconify(self: *Window) Error!void {
-    try requireInit();
+pub fn iconify(self: *Window) void {
+    requireInit();
     _c._glfw.platform.iconifyWindow.?(self.handle);
 }
-pub fn isIconified(self: *Window) Error!bool {
-    try requireInit();
+pub fn isIconified(self: *Window) bool {
+    requireInit();
     return _c._glfw.platform.windowIconified.?(self.handle) != 0;
 }
 
-pub fn restore(self: *Window) Error!void {
-    try requireInit();
+pub fn restore(self: *Window) void {
+    requireInit();
     _c._glfw.platform.restoreWindow.?(self.handle);
 }
 
-pub fn maximize(self: *Window) Error!void {
-    try requireInit();
+pub fn maximize(self: *Window) void {
+    requireInit();
     if (self.handle.monitor != null) return;
     _c._glfw.platform.maximizeWindow.?(self.handle);
 }
 
-pub fn isMaximized(self: *Window) Error!bool {
-    try requireInit();
+pub fn isMaximized(self: *Window) bool {
+    requireInit();
     return _c._glfw.platform.windowMaximized.?(self.handle) != 0;
 }
 
-pub fn show(self: *Window) Error!void {
-    try requireInit();
+pub fn show(self: *Window) void {
+    requireInit();
     if (self.handle.monitor != null) return;
     _c._glfw.platform.showWindow.?(self.handle);
 
-    if (self.handle.focusOnShow != 0) try self.focus();
+    if (self.handle.focusOnShow != 0) self.focus();
 }
 
-pub fn isVisible(self: *Window) Error!bool {
-    try requireInit();
+pub fn isVisible(self: *Window) bool {
+    requireInit();
     return _c._glfw.platform.windowVisible.?(self.handle) != 0;
 }
 
-pub fn hide(self: *Window) Error!void {
-    try requireInit();
+pub fn hide(self: *Window) void {
+    requireInit();
     if (self.handle.monitor != null) return;
     _c._glfw.platform.hideWindow.?(self.handle);
 }
 
-pub fn focus(self: *Window) Error!void {
-    try requireInit();
+pub fn focus(self: *Window) void {
+    requireInit();
     _c._glfw.platform.focusWindow.?(self.handle);
 }
 
-pub fn isFocused(self: *Window) Error!bool {
-    try requireInit();
+pub fn isFocused(self: *Window) bool {
+    requireInit();
     return _c._glfw.platform.windowFocused.?(self.handle) != 0;
 }
 
-pub fn isHovered(self: *Window) Error!bool {
-    try requireInit();
+pub fn isHovered(self: *Window) bool {
+    requireInit();
     return _c._glfw.platform.windowHovered.?(self.handle) != 0;
 }
 
-pub fn requestAttention(self: *Window) Error!void {
-    try requireInit();
+pub fn requestAttention(self: *Window) void {
+    requireInit();
     _c._glfw.platform.requestWindowAttention.?(self.handle);
 }
 
@@ -240,13 +241,13 @@ pub fn setWindowAttrib(self: *Window, attrib: c_int, value: c_int) Error!void {
     try errorCheck();
 }
 
-pub fn getMonitor(self: *Window) Error!?Monitor {
-    try requireInit();
+pub fn getMonitor(self: *Window) ?Monitor {
+    requireInit();
     return .{ .handle = self.handle.monitor };
 }
 
-pub fn setMonitor(self: *Window, monitor: ?*Monitor, pos: Position, size: Size, refreshRate: ?u32) Error!void {
-    try requireInit();
+pub fn setMonitor(self: *Window, monitor: ?*Monitor, pos: Position, size: Size, refreshRate: ?u32) void {
+    requireInit();
 
     self.handle.videoMode.width = @intCast(size.width);
     self.handle.videoMode.height = @intCast(size.height);
@@ -263,13 +264,13 @@ pub fn setMonitor(self: *Window, monitor: ?*Monitor, pos: Position, size: Size, 
     );
 }
 
-pub fn setUserPointer(self: *Window, pointer: *anyopaque) Error!void {
-    try requireInit();
+pub fn setUserPointer(self: *Window, pointer: *anyopaque) void {
+    requireInit();
     self.handle.userPointer = pointer;
 }
 
-pub fn getUserPointer(self: *Window) Error!?*anyopaque {
-    try requireInit();
+pub fn getUserPointer(self: *Window) ?*anyopaque {
+    requireInit();
     return self.handle.userPointer;
 }
 

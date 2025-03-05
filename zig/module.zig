@@ -5,7 +5,6 @@ pub const c = internal.c;
 pub const Input = @import("input.zig");
 pub const Hint = @import("hint.zig");
 pub const Error = @import("error.zig").Error;
-// Some simple zig bindings
 
 // Constants
 pub const Version = struct {
@@ -33,18 +32,16 @@ pub const Image = c.GLFWimage;
 
 pub fn init() Error!void {
     _ = c.glfwInit();
-    return internal.errorCheck();
+    return errorCheck();
+}
+pub fn errorCheck() Error!void {
+    var description: [*c]const u8 = undefined;
+    if (internal.err.toZigError(c.glfwGetError(&description))) |e| return e;
 }
 
 pub fn deinit() void {
+    internal.requireInit();
     c.glfwTerminate();
-}
-
-/// hint: Valid options can be found in glfw.Hint.Init (excluding the ones ending in Value)
-/// value: Valid options are 0 (false), 1 (true) and the members of glfw.Hint.Init ending in value
-pub fn initHint(hint: c_int, value: c_int) Error!void {
-    c.glfwInitHint(hint, value);
-    return internal.errorCheck();
 }
 
 /// There's no need to use this, the values can be accessed direcly from glfw.Version
@@ -57,9 +54,6 @@ pub fn getVersionString() [*:0]const u8 {
     return c.glfwGetVersionString();
 }
 
-fn requireInit() Error!void {
-    if (_c._glfw.initialized == 0) return Error.NotInitialized;
-}
 /// This should not be used, one of the main benefits of using zig is precisely not needing to use this,
 /// it is exposed in case someone needs it, but consider skipping this and simply using the given glfw functions,
 /// which have included error checks ()
@@ -67,24 +61,24 @@ pub fn setErrorCallback(callback: c.GLFWerrorfun) internal.c.GLFWerrorfun {
     return c.glfwSetErrorCallback(callback);
 }
 
-pub fn pollEvents() Error!void {
-    try requireInit();
+pub fn pollEvents() void {
+    internal.requireInit();
     _c._glfw.platform.pollEvents.?();
 }
 
-pub fn waitEvents() Error!void {
-    try requireInit();
+pub fn waitEvents() void {
+    internal.requireInit();
     _c._glfw.platform.waitEvents.?();
 }
 
 pub fn waitEventsTimeout(timeout: f64) Error!void {
-    try requireInit();
+    internal.requireInit();
     if (timeout != timeout or timeout < 0) return Error.InvalidValue;
     _c._glfw.platform.waitEventsTimeout.?(timeout);
 }
 
-pub fn postEmptyEvent() Error!void {
-    try requireInit();
+pub fn postEmptyEvent() void {
+    internal.requireInit();
     _c._glfw.platform.postEmptyEvent.?();
 }
 //

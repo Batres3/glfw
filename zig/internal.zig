@@ -1,18 +1,28 @@
 //! This module should only be accesed internally, not exposed to the user
+const std = @import("std");
 const builtin = @import("builtin");
 pub const c = @cImport(@cInclude("glfw3.h"));
 pub const _c = @cImport(@cInclude("../../src/internal.h"));
 pub const glfw = @import("module.zig");
 pub const err = @import("error.zig");
 pub const Error = err.Error;
-/// An error check for all the glfw functions, only runs in debug mode by default
-/// we use this instead of error callback in order to be able to return errors
-pub fn errorCheck() Error!void {
-    if (builtin.mode == .Debug) {
+/// An error check for almost all the glfw functions, only runs in debug mode by default
+/// this is useful in case someone terminates the glfw context before freeing relevant structs,
+/// which would lead to undefined behavior, these types of errors are common when developing
+/// but almost impossible to get in any developed application, much less in an application
+/// packcaged in release, therefore, we only do the check in debug mode
+pub fn errorCheck() void {
+    if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
         var description: [*c]const u8 = undefined;
-        return err.toZigError(c.glfwGetError(&description));
+        if (err.toZigError(c.glfwGetError(&description))) |e| {
+            const desc: [*:0]const u8 = @ptrCast(description);
+            std.debug.panic("glfw error: type={}, description={s}", .{ e, desc });
+        }
     }
 }
-pub fn requireInit() Error!void {
-    if (_c._glfw.initialized == 0) return Error.NotInitialized;
+pub fn requireInit() void {
+    if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        if (_c._glfw.initialized == 0)
+            std.debug.panic("glfw function was called without initializing context", .{});
+    }
 }

@@ -7,12 +7,9 @@ const Position = glfw.iPosition;
 const Size = glfw.Size;
 const Workarea = glfw.Workarea;
 const Error = internal.Error;
-const errorCheck = internal.errorCheck;
+const errorCheck = glfw.errorCheck;
 const Monitor = @This();
-
-fn requireInit() Error!void {
-    if (_c._glfw.initialized == 0) return Error.NotInitialized;
-}
+const requireInit = internal.requireInit;
 
 handle: *_c._GLFWmonitor = undefined,
 
@@ -23,20 +20,21 @@ pub fn init(glfw_handle: *c.GLFWmonitor) Monitor {
     return .{ .handle = glfw_handle };
 }
 
-pub fn getAll() Error![]*_c._GLFWmonitor {
-    try requireInit();
+pub fn getAll() []*_c._GLFWmonitor {
+    requireInit();
     const count: usize = @intCast(_c._glfw.monitorCount);
 
     const tmp: [*c]*_c._GLFWmonitor = @ptrCast(_c._glfw.monitors);
     return tmp[0..count];
 }
 
-pub fn getPrimary() Error!Monitor {
+pub fn getPrimary() Monitor {
+    requireInit();
     return .{ .handle = _c._glfw.monitors[0] };
 }
 
-pub fn setCallback(callback: c.GLFWmonitorfun) Error!c.GLFWmonitorfun {
-    try requireInit();
+pub fn setCallback(callback: c.GLFWmonitorfun) c.GLFWmonitorfun {
+    requireInit();
     // TODO: Why are these casts necessary?
     const tmp: c.GLFWmonitorfun = @ptrCast(_c._glfw.callbacks.monitor);
     _c._glfw.callbacks.monitor = @ptrCast(callback);
@@ -45,15 +43,15 @@ pub fn setCallback(callback: c.GLFWmonitorfun) Error!c.GLFWmonitorfun {
 //
 // Member functions
 //
-pub fn getPosition(self: *Monitor) Error!Position {
-    try requireInit();
+pub fn getPosition(self: *Monitor) Position {
+    requireInit();
     var pos: Position = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getMonitorPos.?(self.handle, &pos.x, &pos.y);
     return pos;
 }
 
-pub fn getWorkarea(self: *Monitor) Error!Workarea {
-    try requireInit();
+pub fn getWorkarea(self: *Monitor) Workarea {
+    requireInit();
     var xpos: c_int = 0;
     var ypos: c_int = 0;
     var xsize: c_int = 0;
@@ -63,20 +61,20 @@ pub fn getWorkarea(self: *Monitor) Error!Workarea {
 }
 
 /// Returns size in millimeters, it may not be accurate
-pub fn getPhysicalSize(self: *Monitor) Error!Size {
-    try requireInit();
+pub fn getPhysicalSize(self: *Monitor) Size {
+    requireInit();
     return .{ .width = @intCast(self.handle.heightMM), .height = @intCast(self.handle.widthMM) };
 }
 
-pub fn getContentScale(self: *Monitor) Error!glfw.Scale {
-    try requireInit();
+pub fn getContentScale(self: *Monitor) glfw.Scale {
+    requireInit();
     var data: glfw.Scale = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getMonitorContentScale.?(self.handle, &data.x, &data.y);
     return data;
 }
 
-pub fn getName(self: *Monitor) Error![]const u8 {
-    try requireInit();
+pub fn getName(self: *Monitor) []const u8 {
+    requireInit();
     const len = std.mem.indexOfScalar(u8, &self.handle.name, 0).?;
     return self.handle.name[0..len];
 }
@@ -95,20 +93,21 @@ pub fn getUserPointer(self: *Monitor) ?*anyopaque {
 // Defined in monitor.c
 // extern fn refreshVideoModes(monitor: *_c._GLFWmonitor) callconv(.C) c_int;
 // pub fn getVideoModes(self: *Monitor) Error!?[]c.GLFWvidmode {
-//     try requireInit();
+//     requireInit();
 //     if (refreshVideoModes(self.handle) == 0) return null;
 //     const count: usize = @intCast(self.handle.modeCount);
 //     const tmp: [*c]c.GLFWvidmode = @ptrCast(self.handle.modes);
 //     return tmp[0..count];
 // }
-pub fn getVideoModes(self: *Monitor) Error!?[]const c.GLFWvidmode {
+pub fn getVideoModes(self: *Monitor) ?[]const c.GLFWvidmode {
+    requireInit();
     var count: c_int = 0;
     const res: [*c]const c.GLFWvidmode = @ptrCast(c.glfwGetVideoModes(@ptrCast(self.handle), &count));
     return res[0..@intCast(count)];
 }
 
-pub fn getVideoMode(self: *Monitor) Error!?glfw.VideoMode {
-    try requireInit();
+pub fn getVideoMode(self: *Monitor) ?glfw.VideoMode {
+    requireInit();
     if (_c._glfw.platform.getVideoMode.?(self.handle, &self.handle.currentMode) == 0) return null;
     const current = self.handle.currentMode;
     return .{
@@ -131,8 +130,8 @@ pub fn getGammaRamp(self: *Monitor) Error!?*const glfw.GammaRamp {
     return @ptrCast(res);
 }
 
-pub fn setGammaRamp(self: *Monitor, ramp: *const c.GLFWgammaramp) Error!void {
-    try requireInit();
+pub fn setGammaRamp(self: *Monitor, ramp: *const c.GLFWgammaramp) void {
+    requireInit();
 
     if (self.handle.originalRamp.size == 0) {
         if (_c._glfw.platform.getGammaRamp.?(self.handle, &self.handle.originalRamp) == 0) return;
