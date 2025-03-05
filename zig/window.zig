@@ -307,12 +307,13 @@ pub fn setContentScaleCallback(self: *Window, callback: c.GLFWwindowcontentscale
 /// This function is valid for the hints in InputMode, for Cursor mode use set/getCursorMode
 /// and for RawMouseMotion use set/getRawMouseMotion
 pub fn setInputMode(self: *Window, mode: InputMode, value: bool) void {
-    // This is sure to not fail
+    requireInit();
     c.glfwSetInputMode(@ptrCast(self.handle), @intFromEnum(mode), @intFromBool(value));
 }
 /// This function is valid for the hints in InputMode, for Cursor mode use set/getCursorMode
 /// and for RawMouseMotion use set/getRawMouseMotion
 pub fn getInputMode(self: *Window, mode: InputMode) bool {
+    requireInit();
     const val = switch (mode) {
         .StickyKeys => self.handle.stickyKeys,
         .StickyMouseButtons => self.handle.stickyMouseButtons,
@@ -322,6 +323,7 @@ pub fn getInputMode(self: *Window, mode: InputMode) bool {
     return val != 0;
 }
 pub fn setCursorMode(self: *Window, mode: InputMode.Cursor) void {
+    requireInit();
     const m: c_int = @intFromEnum(mode);
     if (self.handle.cursorMode == m) return;
 
@@ -329,12 +331,15 @@ pub fn setCursorMode(self: *Window, mode: InputMode.Cursor) void {
     _c._glfw.platform.setCursorMode.?(self.handle, m);
 }
 pub fn getCursorMode(self: *Window) InputMode.Cursor {
+    requireInit();
     return @enumFromInt(self.handle.cursorMode);
 }
 pub fn rawMouseMotionSupported() bool {
+    requireInit();
     return _c._glfw.platform.rawMouseMotionSupported.?() != 0;
 }
 pub fn setRawMouseMotion(self: *Window, value: bool) !void {
+    requireInit();
     if (!rawMouseMotionSupported()) return Error.PlatformError;
     const val: c_int = @intFromBool(value);
     if (self.handle.rawMouseMotion == val) return;
@@ -343,6 +348,7 @@ pub fn setRawMouseMotion(self: *Window, value: bool) !void {
     _c._glfw.platform.setRawMouseMotion.?(self.handle, val);
 }
 pub fn getRawMouseMotion(self: *Window) bool {
+    requireInit();
     return self.handle.rawMouseMotion != 0;
 }
 pub const InputMode = enum(c_int) {
@@ -361,6 +367,7 @@ pub const InputMode = enum(c_int) {
 };
 
 pub fn getKey(self: *Window, key: input.Key) input.State {
+    requireInit();
     const k: usize = @intCast(@intFromEnum(key));
     if (self.handle.keys[k] == 3) { // _GLFW_STICK
         // Sticky mode, so we release
@@ -371,6 +378,7 @@ pub fn getKey(self: *Window, key: input.Key) input.State {
 }
 
 pub fn getMouseButton(self: *Window, key: input.Mouse) input.State {
+    requireInit();
     const k: usize = @intCast(@intFromEnum(key));
     if (self.handle.mouseButtons[k] == 3) {
         self.handle.mouseButtons[k] = @intFromEnum(input.State.Release);
