@@ -166,4 +166,9 @@ test "glfw window" {
         try glfw.waitEventsTimeout(0.01);
         try glfw.postEmptyEvent();
     }
+    {
+        // Input
+        try window.setInputMode(.RawMouseMotion, true);
+        try expect(window.getInputMode(.RawMouseMotion).bool);
+    }
 }
