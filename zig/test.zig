@@ -168,7 +168,16 @@ test "glfw window" {
     }
     {
         // Input
-        try window.setInputMode(.RawMouseMotion, true);
-        try expect(window.getInputMode(.RawMouseMotion).bool);
+        window.setInputMode(.StickyKeys, true);
+        try expect(window.getInputMode(.StickyKeys));
+        // Cursor
+        window.setCursorMode(.Normal);
+        try expect(window.getCursorMode() == .Normal);
+        // RawMouseMotion
+        if (glfw.Window.rawMouseMotionSupported()) {
+            try window.setRawMouseMotion(true);
+            try expect(window.getRawMouseMotion());
+            try window.setRawMouseMotion(false);
+        }
     }
 }

@@ -309,80 +309,58 @@ pub fn setContentScaleCallback(self: *Window, callback: c.GLFWwindowcontentscale
 //
 // Input
 //
-pub fn setInputMode(self: *Window, mode: InputMode, value: anytype) !void {
-    const val: c_int = if (@TypeOf(value) == bool)
-        @intFromBool(value)
-    else
-        @intFromEnum(value);
-
-    c.glfwSetInputMode(@ptrCast(self.handle), @intFromEnum(mode), val);
+/// This function is valid for the hints in InputMode, for Cursor mode use set/getCursorMode
+/// and for RawMouseMotion use set/getRawMouseMotion
+pub fn setInputMode(self: *Window, mode: InputMode, value: bool) void {
+    // This is sure to not fail
+    c.glfwSetInputMode(@ptrCast(self.handle), @intFromEnum(mode), @intFromBool(value));
 }
-pub fn getInputMode(self: *Window, mode: InputMode) union { bool: bool, cursor: InputMode.Cursor.Value } {
-    switch (mode) {
-        .StickyKeys => return .{ .bool = self.handle.stickyKeys != 0 },
-        .StickyMouseButtons => return .{ .bool = self.handle.stickyMouseButtons != 0 },
-        .LockKeyMods => return .{ .bool = self.handle.lockKeyMods != 0 },
-        .RawMouseMotion => return .{ .bool = self.handle.rawMouseMotion != 0 },
-        .UnlimitedMouseButtons => return .{ .bool = self.handle.disableMouseButtonLimit != 0 },
-        .Cursor => return .{ .cursor = @enumFromInt(self.handle.cursorMode) },
-    }
+/// This function is valid for the hints in InputMode, for Cursor mode use set/getCursorMode
+/// and for RawMouseMotion use set/getRawMouseMotion
+pub fn getInputMode(self: *Window, mode: InputMode) bool {
+    const val = switch (mode) {
+        .StickyKeys => self.handle.stickyKeys,
+        .StickyMouseButtons => self.handle.stickyMouseButtons,
+        .LockKeyMods => self.handle.lockKeyMods,
+        .UnlimitedMouseButtons => self.handle.disableMouseButtonLimit,
+    };
+    return val != 0;
+}
+pub fn setCursorMode(self: *Window, mode: InputMode.Cursor) void {
+    const m: c_int = @intFromEnum(mode);
+    if (self.handle.cursorMode == m) return;
+
+    internal._glfw.platform.getCursorPos.?(self.handle, &self.handle.virtualCursorPosX, &self.handle.virtualCursorPosY);
+    internal._glfw.platform.setCursorMode.?(self.handle, m);
+}
+pub fn getCursorMode(self: *Window) InputMode.Cursor {
+    return @enumFromInt(self.handle.cursorMode);
+}
+pub fn rawMouseMotionSupported() bool {
+    return internal._glfw.platform.rawMouseMotionSupported.?() != 0;
+}
+pub fn setRawMouseMotion(self: *Window, value: bool) !void {
+    if (!rawMouseMotionSupported()) return Error.PlatformError;
+    const val: c_int = @intFromBool(value);
+    if (self.handle.rawMouseMotion == val) return;
+
+    self.handle.rawMouseMotion = val;
+    internal._glfw.platform.setRawMouseMotion.?(self.handle, val);
+}
+pub fn getRawMouseMotion(self: *Window) bool {
+    return self.handle.rawMouseMotion != 0;
 }
 pub const InputMode = enum(c_int) {
     StickyKeys = c.GLFW_STICKY_KEYS,
     StickyMouseButtons = c.GLFW_STICKY_MOUSE_BUTTONS,
     LockKeyMods = c.GLFW_LOCK_KEY_MODS,
     UnlimitedMouseButtons = c.GLFW_UNLIMITED_MOUSE_BUTTONS,
-    RawMouseMotion = c.GLFW_RAW_MOUSE_MOTION,
-    Cursor = c.GLFW_CURSOR,
-    pub fn set(self: *Window, mode: InputMode, value: bool) !void {
-        c.glfwSetInputMode(@ptrCast(self.handle), @intFromEnum(mode), @intFromBool(value));
-        try errorCheck();
-    }
-    pub fn get(self: *Window, mode: InputMode) bool {
-        const value = switch (mode) {
-            .StickyKeys => self.handle.stickyKeys,
-            .StickyMouseButtons => self.handle.stickyMouseButtons,
-            .LockKeyMods => self.handle.lockKeyMods,
-            .RawMouseMotion => self.handle.rawMouseMotion,
-            .UnlimitedMouseButtons => self.handle.disableMouseButtonLimit,
-        };
-        return value != 0;
-    }
-    pub const _RawMouseMotion = struct {
-        pub fn supported() bool {
-            return internal._glfw.platform.rawMouseMotionSupported.?() != 0;
-        }
-        pub fn get(self: *Window) bool {
-            return self.handle.rawMouseMotion != 0;
-        }
-        pub fn set(self: *Window, value: bool) !void {
-            if (!supported()) return Error.PlatformError;
-            const val: c_int = @intFromBool(value);
-            if (self.handle.rawMouseMotion == val) return;
-            self.handle.rawMouseMotion = val;
-            internal._glfw.platform.setRawMouseMotion.?(self.handle, val);
-        }
-    };
-    pub const Cursor = struct {
-        pub fn get(self: *Window) Value {
-            return @enumFromInt(self.handle.cursorMode);
-        }
-        pub fn set(self: *Window, value: Value) void {
-            const mode: c_int = @intFromEnum(value);
-            if (self.handle.cursorMode == mode) return;
-
-            internal._glfw.platform.getCursorPos.?(
-                self.handle,
-                &self.handle.virtualCursorPosX,
-                &self.handle.virtualCursorPosY,
-            );
-            internal._glfw.platform.setCursorMode(self.handle, mode);
-        }
-        pub const Value = enum(c_int) {
-            Normal = c.GLFW_CURSOR_NORMAL,
-            Disabled = c.GLFW_CURSOR_DISABLED,
-            Hidden = c.GLFW_CURSOR_HIDDEN,
-            Captured = c.GLFW_CURSOR_CAPTURED,
-        };
+    //RawMouseMotion = c.GLFW_RAW_MOUSE_MOTION,
+    //Cursor = c.GLFW_CURSOR;
+    pub const Cursor = enum(c_int) {
+        Normal = c.GLFW_CURSOR_NORMAL,
+        Disabled = c.GLFW_CURSOR_DISABLED,
+        Hidden = c.GLFW_CURSOR_HIDDEN,
+        Captured = c.GLFW_CURSOR_CAPTURED,
     };
 };
