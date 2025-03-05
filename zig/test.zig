@@ -2,7 +2,8 @@ const std = @import("std");
 const glfw = @import("glfw");
 const expect = std.testing.expect;
 test "glfw init hits" {
-    try glfw.initHint(glfw.Hint.Init.HatButtons, glfw.False);
+    try glfw.Hint.Init.set(.HatButtons, false);
+    try glfw.Hint.Init.Cocoa.set(.Menubar, true);
 }
 test "glfw version" {
     var major: c_int = 0;
@@ -75,7 +76,8 @@ test "glfw window" {
     try glfw.init();
     defer glfw.deinit();
 
-    try glfw.Window.defaultHints();
+    try glfw.Hint.Window.set(.Focused, true);
+    try glfw.Hint.Window.defaultHints();
 
     var window = try glfw.Window.init(640, 480, "OpenGL Test", null, null);
     defer window.deinit();

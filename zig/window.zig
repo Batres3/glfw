@@ -9,30 +9,16 @@ const Error = glfw.Error;
 const errorCheck = glfw.errorCheck;
 const Window = @This();
 const Monitor = @import("monitor.zig");
+const Hint = @import("hint.zig");
 
 handle: *internal._GLFWwindow = undefined,
 fn asExternal(self: *Window) *c.GLFWwindow {
     return @ptrCast(self.handle);
 }
 
+// Window hints
+
 // Static functions
-pub fn defaultHints() Error!void {
-    c.glfwDefaultWindowHints();
-    try errorCheck();
-}
-
-pub fn hint(h: c_int, value: c_int) Error!void {
-    c.glfwWindowHint(h, value);
-    try errorCheck();
-}
-
-pub fn hintString(h: c_int) Error![]const u8 {
-    var value: [*:0]const u8 = undefined;
-    c.glfwWindowHintString(h, &value);
-    try errorCheck();
-    return std.mem.span(value);
-}
-
 fn requireInit() Error!void {
     if (internal._glfw.initialized == 0) return Error.NotInitialized;
 }
@@ -293,30 +279,30 @@ pub fn getUserPointer(self: *Window) Error!?*anyopaque {
     return self.handle.userPointer;
 }
 
-pub fn setWindowPosCallback(self: *Window, callback: c.GLFWwindowposfun) void {
+pub fn setPosCallback(self: *Window, callback: c.GLFWwindowposfun) void {
     self.handle.callbacks.pos = callback;
 }
-pub fn setWindowSizeCallback(self: *Window, callback: c.GLFWwindowsizefun) void {
+pub fn setSizeCallback(self: *Window, callback: c.GLFWwindowsizefun) void {
     self.handle.callbacks.size = callback;
 }
-pub fn setWindowCloseCallback(self: *Window, callback: c.GLFWwindowclosefun) void {
+pub fn setCloseCallback(self: *Window, callback: c.GLFWwindowclosefun) void {
     self.handle.callbacks.close = callback;
 }
-pub fn setWindowRefreshCallback(self: *Window, callback: c.GLFWwindowrefreshfun) void {
+pub fn setRefreshCallback(self: *Window, callback: c.GLFWwindowrefreshfun) void {
     self.handle.callbacks.refresh = callback;
 }
-pub fn setWindowFocusCallback(self: *Window, callback: c.GLFWwindowfocusfun) void {
+pub fn setFocusCallback(self: *Window, callback: c.GLFWwindowfocusfun) void {
     self.handle.callbacks.focus = callback;
 }
-pub fn setWindowIconifyCallback(self: *Window, callback: c.GLFWwindowiconifyfun) void {
+pub fn setIconifyCallback(self: *Window, callback: c.GLFWwindowiconifyfun) void {
     self.handle.callbacks.iconify = callback;
 }
-pub fn setWindowMaximizeCallback(self: *Window, callback: c.GLFWwindowmaximizefun) void {
+pub fn setMaximizeCallback(self: *Window, callback: c.GLFWwindowmaximizefun) void {
     self.handle.callbacks.maximize = callback;
 }
 pub fn setFramebufferSizeCallback(self: *Window, callback: c.GLFWwindowsizefun) void {
     self.handle.callbacks.size = callback;
 }
-pub fn setWindowContentScaleCallback(self: *Window, callback: c.GLFWwindowcontentscalefun) void {
+pub fn setContentScaleCallback(self: *Window, callback: c.GLFWwindowcontentscalefun) void {
     self.handle.callbacks.scale = callback;
 }
