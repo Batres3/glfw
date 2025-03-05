@@ -1,6 +1,6 @@
 //! Error codes
 /// Zig errors, the user should only be interacting with these
-const c = @cImport(@cInclude("glfw3.h"));
+const c = @import("internal.zig").c;
 pub const Error = error{
     NotInitialized,
     NoCurrentContext,

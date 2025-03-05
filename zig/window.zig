@@ -1,28 +1,21 @@
 const std = @import("std");
-const c = @cImport(@cInclude("glfw3.h"));
-const internal = @cImport(@cInclude("../../src/internal.h"));
-const glfw = @import("module.zig");
+const internal = @import("internal.zig");
+const c = internal.c;
+const _c = internal._c;
+const glfw = internal.glfw;
 const Position = glfw.Position;
 const Size = glfw.Size;
 const Workarea = glfw.Workarea;
 const Error = glfw.Error;
-const errorCheck = glfw.errorCheck;
 const Window = @This();
 const Monitor = @import("monitor.zig");
 const Hint = @import("hint.zig");
+const errorCheck = internal.errorCheck;
+const requireInit = internal.requireInit;
 
-handle: *internal._GLFWwindow = undefined,
-fn asExternal(self: *Window) *c.GLFWwindow {
-    return @ptrCast(self.handle);
-}
-
-// Window hints
+handle: *_c._GLFWwindow = undefined,
 
 // Static functions
-fn requireInit() Error!void {
-    if (internal._glfw.initialized == 0) return Error.NotInitialized;
-}
-
 pub fn init(width: u16, height: u16, title: [:0]const u8, monitor: ?*Monitor, share: ?*Window) Error!Window {
     const h = c.glfwCreateWindow(
         @as(c_int, width),
@@ -39,7 +32,7 @@ pub fn init(width: u16, height: u16, title: [:0]const u8, monitor: ?*Monitor, sh
 }
 
 pub fn deinit(self: *Window) void {
-    c.glfwDestroyWindow(self.asExternal());
+    c.glfwDestroyWindow(@ptrCast(self.handle));
 }
 
 // TODO: The only possible error for all of these functions is that glfw is not initialized
@@ -63,8 +56,8 @@ pub fn getTitle(self: *Window) Error![]const u8 {
 /// Try to avoid using this function, set the title when creating the window
 pub fn setTitle(self: *Window, title: [:0]const u8) Error!void {
     try requireInit();
-    self.handle.title = internal._glfw_strdup(title);
-    internal._glfw.platform.setWindowTitle.?(self.handle, title);
+    self.handle.title = _c._glfw_strdup(title);
+    _c._glfw.platform.setWindowTitle.?(self.handle, title);
 }
 
 pub fn setIcon(self: *Window, images: []const c.GLFWimage) Error!void {
@@ -75,21 +68,21 @@ pub fn setIcon(self: *Window, images: []const c.GLFWimage) Error!void {
 pub fn getPosition(self: *Window) Error!Position {
     try requireInit();
     var pos: Position = .{ .x = 0, .y = 0 };
-    internal._glfw.platform.getWindowPos.?(self.handle, &pos.x, &pos.y);
+    _c._glfw.platform.getWindowPos.?(self.handle, &pos.x, &pos.y);
     return pos;
 }
 
 pub fn setPosition(self: *Window, pos: Position) Error!void {
     try requireInit();
     if (self.handle.monitor != null) return;
-    internal._glfw.platform.setWindowPos.?(self.handle, pos.x, pos.y);
+    _c._glfw.platform.setWindowPos.?(self.handle, pos.x, pos.y);
 }
 
 pub fn getSize(self: *Window) Error!Size {
     try requireInit();
     var xsize: c_int = 0;
     var ysize: c_int = 0;
-    internal._glfw.platform.getWindowSize.?(self.handle, &xsize, &ysize);
+    _c._glfw.platform.getWindowSize.?(self.handle, &xsize, &ysize);
     return .{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
@@ -98,7 +91,7 @@ pub fn setSize(self: *Window, size: Size) Error!void {
     self.handle.videoMode.width = @intCast(size.width);
     self.handle.videoMode.height = @intCast(size.height);
 
-    internal._glfw.platform.setWindowSize.?(self.handle, self.handle.videoMode.width, self.handle.videoMode.height);
+    _c._glfw.platform.setWindowSize.?(self.handle, self.handle.videoMode.width, self.handle.videoMode.height);
 }
 
 pub fn setSizeLimits(self: *Window, minwidth: ?u32, minheight: ?u32, maxwidth: ?u32, maxheight: ?u32) Error!void {
@@ -113,7 +106,7 @@ pub fn setSizeLimits(self: *Window, minwidth: ?u32, minheight: ?u32, maxwidth: ?
 
     if (self.handle.monitor != null or self.handle.resizable != 0) return;
 
-    internal._glfw.platform.setWindowSizeLimits.?(
+    _c._glfw.platform.setWindowSizeLimits.?(
         self.handle,
         self.handle.minwidth,
         self.handle.minheight,
@@ -131,105 +124,105 @@ pub fn setAspectRatio(self: *Window, numer: ?u32, denom: ?u32) Error!void {
     self.handle.denom = d;
 
     if (self.handle.monitor != null or self.handle.resizable == 0) return;
-    internal._glfw.platform.setWindowAspectRatio.?(self.handle, n, d);
+    _c._glfw.platform.setWindowAspectRatio.?(self.handle, n, d);
 }
 
 pub fn getFramebufferSize(self: *Window) Error!Size {
     try requireInit();
     var xsize: c_int = 0;
     var ysize: c_int = 0;
-    internal._glfw.platform.getFramebufferSize.?(self.handle, &xsize, &ysize);
+    _c._glfw.platform.getFramebufferSize.?(self.handle, &xsize, &ysize);
     return Size{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
 pub fn getFrameSize(self: *Window) Error!glfw.FrameSize {
     try requireInit();
     var f: glfw.FrameSize = .{ .left = 0, .right = 0, .top = 0, .bottom = 0 };
-    internal._glfw.platform.getWindowFrameSize.?(self.handle, &f.left, &f.top, &f.right, &f.bottom);
+    _c._glfw.platform.getWindowFrameSize.?(self.handle, &f.left, &f.top, &f.right, &f.bottom);
     return f;
 }
 
 pub fn getContentScale(self: *Window) Error!glfw.Scale {
     try requireInit();
     var scale: glfw.Scale = .{ .x = 0, .y = 0 };
-    internal._glfw.platform.getWindowContentScale.?(self.handle, &scale.x, &scale.y);
+    _c._glfw.platform.getWindowContentScale.?(self.handle, &scale.x, &scale.y);
     return scale;
 }
 
 pub fn getOpacity(self: *Window) Error!f32 {
     try requireInit();
-    return internal._glfw.platform.getWindowOpacity.?(self.handle);
+    return _c._glfw.platform.getWindowOpacity.?(self.handle);
 }
 
 /// opacity is in [0, 1]
 pub fn setOpacity(self: *Window, opacity: f32) Error!void {
     try requireInit();
     if (opacity != opacity or opacity < 0 or opacity > 1) return Error.InvalidValue;
-    internal._glfw.platform.setWindowOpacity.?(self.handle, opacity);
+    _c._glfw.platform.setWindowOpacity.?(self.handle, opacity);
 }
 
 pub fn iconify(self: *Window) Error!void {
     try requireInit();
-    internal._glfw.platform.iconifyWindow.?(self.handle);
+    _c._glfw.platform.iconifyWindow.?(self.handle);
 }
 pub fn isIconified(self: *Window) Error!bool {
     try requireInit();
-    return internal._glfw.platform.windowIconified.?(self.handle) != 0;
+    return _c._glfw.platform.windowIconified.?(self.handle) != 0;
 }
 
 pub fn restore(self: *Window) Error!void {
     try requireInit();
-    internal._glfw.platform.restoreWindow.?(self.handle);
+    _c._glfw.platform.restoreWindow.?(self.handle);
 }
 
 pub fn maximize(self: *Window) Error!void {
     try requireInit();
     if (self.handle.monitor != null) return;
-    internal._glfw.platform.maximizeWindow.?(self.handle);
+    _c._glfw.platform.maximizeWindow.?(self.handle);
 }
 
 pub fn isMaximized(self: *Window) Error!bool {
     try requireInit();
-    return internal._glfw.platform.windowMaximized.?(self.handle) != 0;
+    return _c._glfw.platform.windowMaximized.?(self.handle) != 0;
 }
 
 pub fn show(self: *Window) Error!void {
     try requireInit();
     if (self.handle.monitor != null) return;
-    internal._glfw.platform.showWindow.?(self.handle);
+    _c._glfw.platform.showWindow.?(self.handle);
 
     if (self.handle.focusOnShow != 0) try self.focus();
 }
 
 pub fn isVisible(self: *Window) Error!bool {
     try requireInit();
-    return internal._glfw.platform.windowVisible.?(self.handle) != 0;
+    return _c._glfw.platform.windowVisible.?(self.handle) != 0;
 }
 
 pub fn hide(self: *Window) Error!void {
     try requireInit();
     if (self.handle.monitor != null) return;
-    internal._glfw.platform.hideWindow.?(self.handle);
+    _c._glfw.platform.hideWindow.?(self.handle);
 }
 
 pub fn focus(self: *Window) Error!void {
     try requireInit();
-    internal._glfw.platform.focusWindow.?(self.handle);
+    _c._glfw.platform.focusWindow.?(self.handle);
 }
 
 pub fn isFocused(self: *Window) Error!bool {
     try requireInit();
-    return internal._glfw.platform.windowFocused.?(self.handle) != 0;
+    return _c._glfw.platform.windowFocused.?(self.handle) != 0;
 }
 
 pub fn isHovered(self: *Window) Error!bool {
     try requireInit();
-    return internal._glfw.platform.windowHovered.?(self.handle) != 0;
+    return _c._glfw.platform.windowHovered.?(self.handle) != 0;
 }
 
 pub fn requestAttention(self: *Window) Error!void {
     try requireInit();
-    internal._glfw.platform.requestWindowAttention.?(self.handle);
+    _c._glfw.platform.requestWindowAttention.?(self.handle);
 }
 
 /// This function should not generally be used, window properties
@@ -258,7 +251,7 @@ pub fn setMonitor(self: *Window, monitor: ?*Monitor, pos: Position, size: Size, 
     self.handle.videoMode.height = @intCast(size.height);
     self.handle.videoMode.refreshRate = if (refreshRate) |rate| @intCast(rate) else -1;
 
-    internal._glfw.platform.setWindowMonitor(
+    _c._glfw.platform.setWindowMonitor(
         self.handle,
         if (monitor) |m| m.handle else null,
         pos.x,
@@ -330,14 +323,14 @@ pub fn setCursorMode(self: *Window, mode: InputMode.Cursor) void {
     const m: c_int = @intFromEnum(mode);
     if (self.handle.cursorMode == m) return;
 
-    internal._glfw.platform.getCursorPos.?(self.handle, &self.handle.virtualCursorPosX, &self.handle.virtualCursorPosY);
-    internal._glfw.platform.setCursorMode.?(self.handle, m);
+    _c._glfw.platform.getCursorPos.?(self.handle, &self.handle.virtualCursorPosX, &self.handle.virtualCursorPosY);
+    _c._glfw.platform.setCursorMode.?(self.handle, m);
 }
 pub fn getCursorMode(self: *Window) InputMode.Cursor {
     return @enumFromInt(self.handle.cursorMode);
 }
 pub fn rawMouseMotionSupported() bool {
-    return internal._glfw.platform.rawMouseMotionSupported.?() != 0;
+    return _c._glfw.platform.rawMouseMotionSupported.?() != 0;
 }
 pub fn setRawMouseMotion(self: *Window, value: bool) !void {
     if (!rawMouseMotionSupported()) return Error.PlatformError;
@@ -345,7 +338,7 @@ pub fn setRawMouseMotion(self: *Window, value: bool) !void {
     if (self.handle.rawMouseMotion == val) return;
 
     self.handle.rawMouseMotion = val;
-    internal._glfw.platform.setRawMouseMotion.?(self.handle, val);
+    _c._glfw.platform.setRawMouseMotion.?(self.handle, val);
 }
 pub fn getRawMouseMotion(self: *Window) bool {
     return self.handle.rawMouseMotion != 0;

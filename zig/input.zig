@@ -1,5 +1,5 @@
 //! Constants for input
-const c = @cImport(@cInclude("glfw3.h"));
+const c = @import("internal.zig").c;
 pub const State = struct {
     pub const Release = c.GLFW_RELEASE;
     pub const Press = c.GLFW_PRESS;

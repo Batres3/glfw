@@ -1,27 +1,22 @@
 //! See the full documentation at
 //! https://www.glfw.org/docs/latest/window_guide.html
-const c = @cImport(@cInclude("glfw3.h"));
-const internal = @cImport(@cInclude("../../src/internal.h"));
-const glfw = @import("module.zig");
-const Error = glfw.Error;
-const errorCheck = glfw.errorCheck;
+const internal = @import("internal.zig");
+const c = internal.c;
+const Error = internal.Error;
 pub const DontCare = c.GLFW_DONT_CARE;
-fn requireInit() Error!void {
-    if (internal._glfw.initialized == 0) return Error.NotInitialized;
-}
 /// Window creation hints, these do _not_ represent state,
 /// but rather hints for creation only, possible values are
 /// true/false
 fn baseHint(h: anytype, value: c_int) Error!void {
-    try requireInit();
+    try internal.requireInit();
     c.glfwWindowHint(@intFromEnum(h), value);
 }
 fn enumHint(h: c_int, value: anytype) Error!void {
-    try requireInit();
+    try internal.requireInit();
     c.glfwWindowHint(h, @intFromEnum(value));
 }
 fn stringHint(h: c_int, value: [*c]const u8) Error!void {
-    try requireInit();
+    try internal.requireInit();
     c.glfwWindowHintString(h, value);
 }
 
@@ -45,7 +40,7 @@ pub const Window = enum(c_int) {
     }
     pub fn defaultHints() Error!void {
         c.glfwDefaultWindowHints();
-        try errorCheck();
+        try internal.errorCheck();
     }
 };
 /// Framebuffer creation hints, these do _not_ represent state,
