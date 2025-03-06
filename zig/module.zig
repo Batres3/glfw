@@ -114,41 +114,36 @@ pub fn getTimerFrequency() u64 {
     return c.glfwGetTimerFrequency();
 }
 //
-// //Context
-// pub fn makeContextCurrent(window: ?*Window) void {
-//     c.glfwMakeContextCurrent(window);
-//     internal.errorCheck();
-// }
+// Context
 //
-// pub fn getCurrentContext(window: ?*Window) ?*Window {
-//     const res = c.glfwGetCurrentContext(window);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn swapBuffers(window: ?*Window) void {
-//     c.glfwSwapBuffers(window);
-//     internal.errorCheck();
-// }
-//
-// pub fn swapInterval(interval: c_int) void {
-//     c.glfwSwapInterval(interval);
-//     internal.errorCheck();
-// }
-//
-// //GL Stuff
-// pub fn extensionSupported(extension: [*:0]const u8) c_int {
-//     const res = c.glfwExtensionSupported(extension);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getProcAddress(procname: [*:0]const u8) ?GLproc {
-//     const res = c.glfwGetProcAddress(procname);
-//     internal.errorCheck();
-//     return res;
-// }
-//
+// TODO: fix tls problems with both of these
+pub fn getCurrentContext() ?Window {
+    internal.requireInit();
+    if (c.glfwGetCurrentContext()) |ptr| {
+        return .{ .handle = @ptrCast(@alignCast(ptr)) };
+    } else return null;
+}
+
+pub fn swapInterval(interval: c_int) !void {
+    internal.requireInit();
+    c.glfwSwapInterval(interval);
+    try errorCheck();
+}
+pub const OpenGL = struct {
+    pub fn extensionSupported(extension: [*:0]const u8) !bool {
+        internal.requireInit();
+        const res = c.glfwExtensionSupported(extension);
+        try errorCheck();
+        return res != 0;
+    }
+
+    pub fn getProcAddress(procname: [*:0]const u8) !c.GLFWglproc {
+        internal.requireInit();
+        const res = c.glfwGetProcAddress(procname);
+        try errorCheck();
+        return res;
+    }
+};
 // //Vulkan stuff
 // pub fn getInstanceProcAddress(instance: VkInstance, procname: [*:0]const u8) ?VKproc {
 //     const res = c.glfwGetInstanceProcAddress(instance, procname);

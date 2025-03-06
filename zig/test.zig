@@ -197,6 +197,16 @@ test "glfw window" {
             try expect(window.handle.cursor == cursor.handle);
         }
     }
+    {
+        // Context
+        try window.makeCurrentContext();
+        if (glfw.getCurrentContext()) |current| {
+            try expect(current.handle == window.handle);
+        }
+        try glfw.swapInterval(1);
+        _ = try glfw.OpenGL.extensionSupported("GL_ARB_gl_spirv");
+        _ = try glfw.OpenGL.getProcAddress("glSpecializeShaderARB");
+    }
 }
 
 test "glfw input" {

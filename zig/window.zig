@@ -453,3 +453,32 @@ pub fn setDropCallback(self: *Window, callback: c.GLFWdropfun) void {
     requireInit();
     self.handle.callbacks.drop = callback;
 }
+//
+// Context
+//
+
+pub fn makeCurrentContext(self: *Window) !void {
+    requireInit();
+    c.glfwMakeContextCurrent(@ptrCast(self.handle));
+    try glfw.errorCheck();
+    // TODO: Check why this fails, it seems like tls.posix is not set? but it works when it runs the C code?
+    // if (self.handle.context.client == @intFromEnum(glfw.Hint.Context.API.Client.Value.NoAPI)) {
+    //     return Error.NoWindowContext;
+    // }
+    //
+    // if (_c._glfwPlatformGetTls(&_c._glfw.contextSlot)) |ptr| {
+    //     const prev: *_c._GLFWwindow = @ptrCast(@alignCast(ptr));
+    //     if (self.handle.context.source != prev.context.source)
+    //         prev.context.makeCurrent.?(null);
+    // }
+    //
+    // self.handle.context.makeCurrent.?(self.handle);
+}
+
+pub fn swapBuffers(self: *Window) !void {
+    requireInit();
+    if (self.handle.context.client == @intFromEnum(glfw.Hint.Context.API.Client.Value.NoAPI))
+        return Error.NoWindowContext;
+
+    self.handle.context.swapBuffers(self.handle);
+}
