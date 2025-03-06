@@ -173,45 +173,6 @@ pub const Mouse = enum(c_int) {
     _8 = c.GLFW_MOUSE_BUTTON_8,
 };
 
-pub const Joystick = struct {
-    pub const Hat = enum(c_int) {
-        Centered = c.GLFW_HAT_CENTERED,
-        Up = c.GLFW_HAT_UP,
-        Right = c.GLFW_HAT_RIGHT,
-        Down = c.GLFW_HAT_DOWN,
-        Left = c.GLFW_HAT_LEFT,
-        RightUp = c.GLFW_HAT_RIGHT_UP,
-        RightDown = c.GLFW_HAT_RIGHT_DOWN,
-        LeftUp = c.GLFW_HAT_LEFT_UP,
-        LeftDown = c.GLFW_HAT_LEFT_DOWN,
-    };
-    pub const Button = enum(c_int) {
-        // TODO: Consider changing this notation
-        _1 = c.GLFW_JOYSTICK_1,
-        _2 = c.GLFW_JOYSTICK_2,
-        _3 = c.GLFW_JOYSTICK_3,
-        _4 = c.GLFW_JOYSTICK_4,
-        _5 = c.GLFW_JOYSTICK_5,
-        _6 = c.GLFW_JOYSTICK_6,
-        _7 = c.GLFW_JOYSTICK_7,
-        _8 = c.GLFW_JOYSTICK_8,
-        _9 = c.GLFW_JOYSTICK_9,
-        _10 = c.GLFW_JOYSTICK_10,
-        _11 = c.GLFW_JOYSTICK_11,
-        _12 = c.GLFW_JOYSTICK_12,
-        _13 = c.GLFW_JOYSTICK_13,
-        _14 = c.GLFW_JOYSTICK_14,
-        _15 = c.GLFW_JOYSTICK_15,
-        _16 = c.GLFW_JOYSTICK_16,
-        Last = c.GLFW_JOYSTICK_LAST,
-    };
-    pub const Event = enum(c_int) {
-        // Its crazy that glfw connected is a macro for a joystick
-        Connected = c.GLFW_CONNECTED,
-        Disconnected = c.GLFW_DISCONNECTED,
-    };
-};
-
 pub const Gamepad = struct {
     pub const Button = enum(c_int) {
         A = c.GLFW_GAMEPAD_BUTTON_A,

@@ -24,10 +24,12 @@ pub const FrameSize = struct { left: c_int, right: c_int, top: c_int, bottom: c_
 pub const Scale = struct { x: f32, y: f32 };
 pub const VideoMode = struct { size: Size, bits: struct { r: c_int, g: c_int, b: c_int }, refreshRate: c_int };
 pub const GammaRamp = c.GLFWgammaramp;
+pub const GamepadState = c.GLFWgamepadstate;
 
 pub const Monitor = @import("monitor.zig");
 pub const Window = @import("window.zig");
-pub const Cursor = c.GLFWcursor;
+pub const Cursor = @import("cursor.zig");
+pub const Joystick = @import("joystick.zig");
 pub const Image = c.GLFWimage;
 
 pub fn init() Error!void {
@@ -81,234 +83,36 @@ pub fn postEmptyEvent() void {
     internal.requireInit();
     _c._glfw.platform.postEmptyEvent.?();
 }
-//
-// //Depending on what your input mode is, you can change to true/false or one of the attribute enums
-// pub fn getInputMode(window: ?*Window, mode: InputMode) c_int {
-//     const res = c.glfwGetInputMode(window, (mode));
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn setInputMode(window: ?*Window, mode: InputMode, value: c_int) void {
-//     c.glfwSetInputMode(window, (mode), value);
-//     internal.errorCheck();
-// }
-//
-// pub fn rawMouseMotionSupported() bool {
-//     const res = c.glfwRawMouseMotionSupported();
-//     internal.errorCheck();
-//     return res != 0;
-// }
-//
-// const std = @import("std");
-// pub fn getKeyName(key: Key, scancode: c_int) ?[:0]const u8 {
-//     const res = c.glfwGetKeyName((key), scancode);
-//     internal.errorCheck();
-//     return std.mem.spanZ(res);
-// }
-//
-// pub fn getKeyScancode(key: Key) c_int {
-//     const res = c.glfwGetKeyScancode((key));
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getKey(window: ?*Window, key: Key) KeyState {
-//     const res = c.glfwGetKey(window, (key));
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getMouseButton(window: ?*Window, button: Mouse) KeyState {
-//     const res = c.glfwGetMouseButton(window, (button));
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getCursorPos(window: ?*Window, xpos: *f64, ypos: *f64) void {
-//     c.glfwGetCursorPos(window, xpos, ypos);
-//     internal.errorCheck();
-// }
-//
-// pub fn setCursorPos(window: ?*Window, xpos: f64, ypos: f64) void {
-//     c.glfwSetCursorPos(window, xpos, ypos);
-//     internal.errorCheck();
-// }
-//
-// pub fn createCursor(image: ?*Image, xhot: c_int, yhot: c_int) ?*CursorHandle {
-//     const res = c.glfwCreateCursor(image, xhot, yhot);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn createStandardCursor(shape: CursorShape) ?*CursorHandle {
-//     const res = c.glfwCreateStandardCursor((shape));
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn destroyCursor(cursor: ?*CursorHandle) void {
-//     c.glfwDestroyCursor(cursor);
-//     internal.errorCheck();
-// }
-//
-// pub fn setCursor(window: ?*Window, cursor: ?*CursorHandle) void {
-//     c.glfwSetCursor(window, cursor);
-//     internal.errorCheck();
-// }
-//
-// pub fn setKeyCallback(window: ?*Window, callback: KeyFun) KeyFun {
-//     const res = c.glfwSetKeyCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setCharCallback(window: ?*Window, callback: CharFun) CharFun {
-//     const res = c.glfwSetCharCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setCharModsCallback(window: ?*Window, callback: CharmodsFun) CharmodsFun {
-//     const res = c.glfwSetCharModsCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setMouseButtonCallback(window: ?*Window, callback: MouseButtonFun) MouseButtonFun {
-//     const res = c.glfwSetMouseButtonCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setCursorPosCallback(window: ?*Window, callback: CursorPosFun) CursorPosFun {
-//     const res = c.glfwSetCursorPosCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setCursorEnterCallback(window: ?*Window, callback: CursorEnterFun) CursorEnterFun {
-//     const res = c.glfwSetCursorEnterCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setScrollCallback(window: ?*Window, callback: ScrollFun) ScrollFun {
-//     const res = c.glfwSetScrollCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-// pub fn setDropCallback(window: ?*Window, callback: DropFun) DropFun {
-//     const res = c.glfwSetDropCallback(window, callback);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn joystickPresent(jid: c_int) bool {
-//     const res = c.glfwJoystickPresent(jid);
-//     internal.errorCheck();
-//     return res != 0;
-// }
-//
-// pub fn getJoystickAxes(jid: c_int, count: *c_int) ?[*]const f32 {
-//     const res = c.glfwGetJoystickAxes(jid, count);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getJoystickButtons(jid: c_int, count: *c_int) ?[*]const u8 {
-//     const res = c.glfwGetJoystickButtons(jid, count);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getJoystickHats(jid: c_int, count: *c_int) ?[*]const u8 {
-//     const res = c.glfwGetJoystickHats(jid, count);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getJoystickName(jid: c_int) ?[*:0]const u8 {
-//     const res = c.glfwGetJoystickName(jid);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getJoystickGUID(jid: c_int) ?[*:0]const u8 {
-//     const res = c.glfwGetJoystickGUID(jid);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn setJoystickUserPointer(jid: c_int, pointer: *anyopaque) void {
-//     const res = c.glfwSetJoystickUserPointer(jid, pointer);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getJoystickUserPointer(jid: c_int) *anyopaque {
-//     const res = getJoystickUserPointer(jid);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn joystickIsGamepad(jid: c_int) c_int {
-//     const res = c.glfwJoystickIsGamepad(jid);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn setJoystickCallback(callback: JoystickFun) JoystickFun {
-//     const res = c.glfwSetJoystickCallback(callback);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn updateGamepadMappings(string: [*:0]const u8) c_int {
-//     const res = c.glfwUpdateGamepadMappings(string);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getGamepadName(jid: c_int) ?[*:0]const u8 {
-//     const res = c.glfwGetGamepadName(jid);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getGamepadState(jid: c_int, state: ?*GamepadState) c_int {
-//     const res = c.glfwGetGamepadState(jid, state);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn setClipboardString(window: ?*Window, string: [*:0]const u8) void {
-//     c.glfwSetClipboardString(window, string);
-//     internal.errorCheck();
-// }
-//
-// pub fn getClipboardString(window: ?*Window) ?[:0]const u8 {
-//     const res = c.glfwGetClipboardString(window);
-//     internal.errorCheck();
-//     return std.mem.spanZ(res);
-// }
-//
-// pub fn getTime() f64 {
-//     const res = c.glfwGetTime();
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn setTime(time: f64) void {
-//     c.glfwSetTime(time);
-//     internal.errorCheck();
-// }
-//
-// pub fn getTimerValue() u64 {
-//     const res = c.glfwGetTimerValue();
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getTimerFrequency() u64 {
-//     const res = c.glfwGetTimerFrequency();
-//     internal.errorCheck();
-//     return res();
-// }
+
+pub fn setClipboardString(string: [:0]const u8) void {
+    internal.requireInit();
+    _c._glfw.platform.setClipboardString.?(@ptrCast(string));
+}
+
+pub fn getClipboardString() []const u8 {
+    internal.requireInit();
+    const s: [*:0]const u8 = @ptrCast(_c._glfw.platform.getClipboardString.?());
+    return std.mem.span(s);
+}
+
+pub fn setTime(time: f64) !void {
+    c.glfwSetTime(time);
+    errorCheck();
+}
+pub fn getTime() f64 {
+    internal.requireInit();
+    c.glfwGetTime();
+}
+
+pub fn getTimerValue() u64 {
+    internal.requireInit();
+    return c.glfwGetTimerValue();
+}
+
+pub fn getTimerFrequency() u64 {
+    internal.requireInit();
+    return c.glfwGetTimerFrequency();
+}
 //
 // //Context
 // pub fn makeContextCurrent(window: ?*Window) void {

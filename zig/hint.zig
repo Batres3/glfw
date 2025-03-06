@@ -191,30 +191,6 @@ pub const Context = enum(c_int) {
     };
 };
 
-pub const Cursor = struct {
-    pub const Shape = enum(c_int) {
-        Arrow = c.GLFW_ARROW_CURSOR,
-        Ibeam = c.GLFW_IBEAM_CURSOR,
-        Crosshair = c.GLFW_CROSSHAIR_CURSOR,
-        PointingHand = c.GLFW_POINTING_HAND_CURSOR,
-        Hand = c.GLFW_HAND_CURSOR,
-        /// Alias for compatibility
-        NotAllowed = c.GLFW_NOT_ALLOWED_CURSOR,
-        /// Alias for compatibility
-        Hresize = c.GLFW_HRESIZE_CURSOR,
-        /// Alias for compatibility
-        Vresize = c.GLFW_VRESIZE_CURSOR,
-        /// These are provided by a newer standard and may not by supported by all themes
-        pub const Resize = enum(c_int) {
-            EW = c.GLFW_RESIZE_EW_CURSOR,
-            NS = c.GLFW_RESIZE_NS_CURSOR,
-            NWSE = c.GLFW_RESIZE_NWSE_CURSOR,
-            NESW = c.GLFW_RESIZE_NESW_CURSOR,
-            All = c.GLFW_RESIZE_ALL_CURSOR,
-        };
-    };
-};
-
 fn initHint(h: anytype, value: c_int) void {
     c.glfwInitHint(@intFromEnum(h), value);
     internal.errorCheck();

@@ -9,6 +9,7 @@ const Size = glfw.Size;
 const Workarea = glfw.Workarea;
 const Error = glfw.Error;
 const Window = @This();
+const Cursor = @import("cursor.zig");
 const Monitor = @import("monitor.zig");
 const Hint = @import("hint.zig");
 const errorCheck = glfw.errorCheck;
@@ -385,4 +386,70 @@ pub fn getMouseButton(self: *Window, key: input.Mouse) input.State {
         return .Press;
     }
     return @enumFromInt(self.handle.mouseButtons[k]);
+}
+
+pub fn setCursorPosition(self: *Window, pos: glfw.Position) !void {
+    requireInit();
+    if (pos.x != pos.x or pos.y != pos.y) return Error.InvalidValue;
+    if (!self.isFocused()) return;
+
+    if (self.handle.cursorMode == @intFromEnum(InputMode.Cursor.Disabled)) {
+        self.handle.virtualCursorPosX = pos.x;
+        self.handle.virtualCursorPosY = pos.y;
+    } else {
+        _c._glfw.platform.setCursorPos.?(self.handle, pos.x, pos.y);
+    }
+}
+
+pub fn getCursorPosition(self: *Window) glfw.Position {
+    requireInit();
+    if (self.handle.cursorMode == @intFromEnum(InputMode.Cursor.Disabled)) {
+        return .{ .x = self.handle.virtualCursorPosX, .y = self.handle.virtualCursorPosY };
+    }
+    var x: f64 = 0;
+    var y: f64 = 0;
+    _c._glfw.platform.getCursorPos.?(self.handle, &x, &y);
+    return .{ .x = x, .y = y };
+}
+
+pub fn setCursor(self: *Window, cursor: ?Cursor) void {
+    requireInit();
+    if (cursor) |ptr| {
+        self.handle.cursor = ptr.handle;
+    } else self.handle.cursor = null;
+
+    _c._glfw.platform.setCursor.?(self.handle, self.handle.cursor);
+}
+
+pub fn setKeyCallback(self: *Window, callback: c.GLFWkeyfun) void {
+    requireInit();
+    self.handle.callbacks.key = callback;
+}
+pub fn setCharCallback(self: *Window, callback: c.GLFWcharfun) void {
+    requireInit();
+    self.handle.callbacks.character = callback;
+}
+pub fn setCharModsCallback(self: *Window, callback: c.GLFWcharmodsfun) void {
+    requireInit();
+    self.handle.callbacks.charmods = callback;
+}
+pub fn setMouseButtonCallback(self: *Window, callback: c.GLFWmousebuttonfun) void {
+    requireInit();
+    self.handle.callbacks.mouseButton = callback;
+}
+pub fn setCursorPosCallback(self: *Window, callback: c.GLFWcursorposfun) void {
+    requireInit();
+    self.handle.callbacks.cursorPos = callback;
+}
+pub fn setCursorEnterCallback(self: *Window, callback: c.GLFWcursorenterfun) void {
+    requireInit();
+    self.handle.callbacks.cursorEnter = callback;
+}
+pub fn setScrollCallback(self: *Window, callback: c.GLFWscrollfun) void {
+    requireInit();
+    self.handle.callbacks.scroll = callback;
+}
+pub fn setDropCallback(self: *Window, callback: c.GLFWdropfun) void {
+    requireInit();
+    self.handle.callbacks.drop = callback;
 }

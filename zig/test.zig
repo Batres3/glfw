@@ -168,7 +168,7 @@ test "glfw window" {
         glfw.postEmptyEvent();
     }
     {
-        // Input
+        // Input Modes
         window.setInputMode(.StickyKeys, true);
         try expect(window.getInputMode(.StickyKeys));
         // Cursor
@@ -184,8 +184,18 @@ test "glfw window" {
         try expect(window.getKey(.A) == glfw.Input.State.Release);
         try expect(window.getMouseButton(.Left) == glfw.Input.State.Release);
 
-        // _ = window.getCursorPosition();
-        // try window.setCursorPosition(.{ .x = 0, .y = 0 });
+        _ = window.getCursorPosition();
+        try window.setCursorPosition(.{ .x = 0, .y = 0 });
+    }
+    {
+        // Cursor
+        if (glfw.Cursor.init(.Hand)) |c| {
+            var cursor = c;
+            defer cursor.deinit();
+
+            window.setCursor(cursor);
+            try expect(window.handle.cursor == cursor.handle);
+        }
     }
 }
 
@@ -201,4 +211,22 @@ test "glfw input" {
     //         std.debug.print("null, {s}\n", .{key.name});
     //     }
     // }
+    glfw.setClipboardString("Test string");
+    try expect(std.mem.eql(u8, glfw.getClipboardString(), "Test string"));
+
+    // Joysticks
+    if (glfw.Joystick.init(._1)) |joystick| {
+        // defer j.deinit() doesn't actually do anything at the moment
+        var j = joystick;
+        _ = j.isPresent();
+        _ = j.getAxes();
+        _ = j.getButtons();
+        _ = j.getName();
+        _ = j.getGUID();
+        _ = j.getUserPointer();
+        _ = j.isGamepad();
+        _ = j.getGamepadName();
+        var state: glfw.GamepadState = glfw.GamepadState{};
+        _ = j.getGamepadState(&state);
+    }
 }
