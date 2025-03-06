@@ -251,7 +251,10 @@ test "glfw vulkan" {
                     _ = extension;
                 }
             }
-            // _ = glfw.Vulkan.getInstanceProcAddress(0, "vkGetInstanceProcAddr");
+            // TODO: Make actual tests
+            _ = glfw.Vulkan.getInstanceProcAddress(null, "vkGetInstanceProcAddr");
+            _ = glfw.Vulkan.getPhysicalDevicePresentationSupport(null, null, 0);
+            _ = glfw.Vulkan.createWindowSurface(null, null, null, null);
         }
     }
 }

@@ -1,5 +1,12 @@
 const internal = @import("internal.zig");
 const c = internal.c;
+const _c = internal._c;
+const VkInstance = _c.VkInstance;
+const VkPhysicalDevice = _c.VkPhysicalDevice;
+const VkSurfaceKHR = _c.VkSurfaceKHR;
+const VkFlags = _c.VkFlags;
+const VkBool32 = _c.VkBool32;
+const VkAllocationCallbacks = _c.VkAllocationCallbacks;
 pub fn supported() bool {
     const res = c.glfwVulkanSupported();
     internal.errorCheck();
@@ -13,20 +20,20 @@ pub fn getRequiredInstanceExtensions() ?[][*:0]const u8 {
     return @as([*c][*:0]const u8, @ptrCast(res))[0..2];
 }
 
-// pub fn getInstanceProcAddress(instance: c.VkInstance, procname: [*:0]const u8) ?c.GLFWvkproc {
-//     const res = c.glfwGetInstanceProcAddress(instance, procname);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getPhysicalDevicePresentationSupport(instance: c.VkInstance, device: c.VkPhysicalDevice, queuefamily: u32) bool {
-//     const res = c.glfwGetPhysicalDevicePresentationSupport(instance, device, queuefamily);
-//     internal.errorCheck();
-//     return res != 0;
-// }
-//
-// pub fn createWindowSurface(instance: c.VkInstance, window: *c.GLFWwindow, allocator: ?*const c.VkAllocationCallbacks, surface: *c.VkSurfaceKHR) c.VkResult {
-//     const res = c.glfwCreateWindowSurface(instance, window, allocator, surface);
-//     internal.errorCheck();
-//     return res;
-// }
+pub fn getInstanceProcAddress(instance: VkInstance, procname: [*:0]const u8) ?c.GLFWvkproc {
+    const res = c.glfwGetInstanceProcAddress(instance, procname);
+    internal.errorCheck();
+    return res;
+}
+
+pub fn getPhysicalDevicePresentationSupport(instance: VkInstance, device: VkPhysicalDevice, queuefamily: u32) bool {
+    const res = c.glfwGetPhysicalDevicePresentationSupport(instance, device, queuefamily);
+    internal.errorCheck();
+    return res != 0;
+}
+
+pub fn createWindowSurface(instance: VkInstance, window: *c.GLFWwindow, allocator: ?*const VkAllocationCallbacks, surface: *VkSurfaceKHR) c.VkResult {
+    const res = c.glfwCreateWindowSurface(instance, window, allocator, surface);
+    internal.errorCheck();
+    return res;
+}
