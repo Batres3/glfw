@@ -7,9 +7,14 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const options = b.addOptions();
+    const vulkan = b.option(bool, "vulkan", "Include the vulkan header and associated files") orelse false;
+    options.addOption(bool, "vulkan", vulkan);
+
     // Add module
     const mod = b.addModule("glfw", .{ .root_source_file = b.path("zig/module.zig") });
     mod.addIncludePath(b.path("include/GLFW/"));
+    mod.addOptions("glfw_options", options);
 
     // Link as static library
     const lib = b.addStaticLibrary(.{
@@ -57,12 +62,7 @@ pub fn build(b: *std.Build) void {
             "src/linux_joystick.c",
         } });
 
-        lib.defineCMacro("_GLFW_X11", null);
-        // lib.linkSystemLibrary("X11");
-        // lib.linkSystemLibrary("GL");
-        // lib.linkSystemLibrary("dl");
-        // lib.linkSystemLibrary("m");
-        // lib.linkSystemLibrary("pthread");
+        lib.defineCMacro("_GLFW_X11", "");
     }
 
     if (target.result.os.tag == .macos) {
@@ -98,7 +98,7 @@ pub fn build(b: *std.Build) void {
 
         lib.defineCMacro("_GLFW_WIN32", null);
         lib.defineCMacro("_CRT_SECURE_NO_WARNINGS", null);
-        lib.linkSystemLibrary("opengl32.lib");
+        //lib.linkSystemLibrary("opengl32.lib");
     }
     b.installArtifact(lib);
 
@@ -109,6 +109,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     tests.root_module.addImport("glfw", mod);
+    tests.root_module.addOptions("build_options", options);
     tests.linkLibrary(lib);
     b.step("test", "Run glfw tests").dependOn(&b.addRunArtifact(tests).step);
 }

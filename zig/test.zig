@@ -240,3 +240,18 @@ test "glfw input" {
         _ = j.getGamepadState(&state);
     }
 }
+
+test "glfw vulkan" {
+    if (glfw.build_options.vulkan) {
+        try glfw.init();
+        defer glfw.deinit();
+        if (glfw.Vulkan.supported()) {
+            if (glfw.Vulkan.getRequiredInstanceExtensions()) |extensions| {
+                for (extensions) |extension| {
+                    _ = extension;
+                }
+            }
+            // _ = glfw.Vulkan.getInstanceProcAddress(0, "vkGetInstanceProcAddr");
+        }
+    }
+}

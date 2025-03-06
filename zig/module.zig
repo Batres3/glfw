@@ -1,6 +1,7 @@
 const std = @import("std");
 const internal = @import("internal.zig");
 const _c = internal._c;
+pub const build_options = @import("glfw_options");
 pub const c = internal.c;
 pub const Input = @import("input.zig");
 pub const Hint = @import("hint.zig");
@@ -144,33 +145,5 @@ pub const OpenGL = struct {
         return res;
     }
 };
-// //Vulkan stuff
-// pub fn getInstanceProcAddress(instance: VkInstance, procname: [*:0]const u8) ?VKproc {
-//     const res = c.glfwGetInstanceProcAddress(instance, procname);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn getPhysicalDevicePresentationSupport(instance: VkInstance, device: VkPhysicalDevice, queuefamily: u32) bool {
-//     const res = c.glfwGetPhysicalDevicePresentationSupport(instance, device, queuefamily);
-//     internal.errorCheck();
-//     return res != 0;
-// }
-//
-// pub fn createWindowSurface(instance: VkInstance, window: *Window, allocator: ?*const VkAllocationCallbacks, surface: *VkSurfaceKHR) VkResult {
-//     const res = c.glfwCreateWindowSurface(instance, window, allocator, surface);
-//     internal.errorCheck();
-//     return res;
-// }
-//
-// pub fn vulkanSupported() bool {
-//     const res = c.glfwVulkanSupported();
-//     internal.errorCheck();
-//     return res != 0;
-// }
-//
-// pub fn getRequiredInstanceExtensions(count: *u32) ?[*][*:0]const u8 {
-//     const res = c.glfwGetRequiredInstanceExtensions(count);
-//     internal.errorCheck();
-//     return res;
-// }
+
+pub const Vulkan = if (build_options.vulkan) @import("vulkan.zig") else struct {};

@@ -1,7 +1,11 @@
 //! This module should only be accesed internally, not exposed to the user
 const std = @import("std");
 const builtin = @import("builtin");
-pub const c = @cImport(@cInclude("glfw3.h"));
+pub const c = @cImport({
+    if (glfw.build_options.vulkan)
+        @cDefine("GLFW_INCLUDE_VULKAN", "");
+    @cInclude("glfw3.h");
+});
 pub const _c = @cImport(@cInclude("../../src/internal.h"));
 pub const glfw = @import("module.zig");
 pub const err = @import("error.zig");
