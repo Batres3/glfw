@@ -21,19 +21,19 @@ pub fn getRequiredInstanceExtensions() ?[][*:0]const u8 {
 }
 
 pub fn getInstanceProcAddress(instance: VkInstance, procname: [*:0]const u8) ?c.GLFWvkproc {
-    const res = c.glfwGetInstanceProcAddress(instance, procname);
+    const res = c.glfwGetInstanceProcAddress(@ptrCast(instance), procname);
     internal.errorCheck();
     return res;
 }
 
 pub fn getPhysicalDevicePresentationSupport(instance: VkInstance, device: VkPhysicalDevice, queuefamily: u32) bool {
-    const res = c.glfwGetPhysicalDevicePresentationSupport(instance, device, queuefamily);
+    const res = c.glfwGetPhysicalDevicePresentationSupport(@ptrCast(instance), @ptrCast(device), queuefamily);
     internal.errorCheck();
     return res != 0;
 }
 
-pub fn createWindowSurface(instance: VkInstance, window: *c.GLFWwindow, allocator: ?*const VkAllocationCallbacks, surface: *VkSurfaceKHR) c.VkResult {
-    const res = c.glfwCreateWindowSurface(instance, window, allocator, surface);
+pub fn createWindowSurface(instance: VkInstance, window: ?*c.GLFWwindow, allocator: ?*const VkAllocationCallbacks, surface: ?*VkSurfaceKHR) c.VkResult {
+    const res = c.glfwCreateWindowSurface(@ptrCast(instance), @ptrCast(window), @ptrCast(@alignCast(allocator)), @ptrCast(surface));
     internal.errorCheck();
     return res;
 }

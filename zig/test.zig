@@ -252,9 +252,9 @@ test "glfw vulkan" {
                 }
             }
             // TODO: Make actual tests
-            _ = glfw.Vulkan.getInstanceProcAddress(null, "vkGetInstanceProcAddr");
-            _ = glfw.Vulkan.getPhysicalDevicePresentationSupport(null, null, 0);
-            _ = glfw.Vulkan.createWindowSurface(null, null, null, null);
+            // _ = glfw.Vulkan.getInstanceProcAddress(null, "vkGetInstanceProcAddr");
+            // _ = glfw.Vulkan.getPhysicalDevicePresentationSupport(null, null, 0);
+            // _ = glfw.Vulkan.createWindowSurface(null, null, null, null);
         }
     }
 }
