@@ -4,13 +4,13 @@ const input = @import("input.zig");
 const c = internal.c;
 const _c = internal._c;
 const glfw = internal.glfw;
-const Position = glfw.iPosition;
+const Position = glfw.uPos;
 const Size = glfw.Size;
 const Workarea = glfw.Workarea;
 const Error = glfw.Error;
 const Window = @This();
-const Cursor = @import("cursor.zig");
-const Monitor = @import("monitor.zig");
+const Cursor = @import("Cursor.zig");
+const Monitor = @import("Monitor.zig");
 const Hint = @import("hint.zig");
 const errorCheck = glfw.errorCheck;
 const requireInit = internal.requireInit;
@@ -70,15 +70,16 @@ pub fn setIcon(self: *Window, images: []const c.GLFWimage) Error!void {
 
 pub fn getPosition(self: *Window) Position {
     requireInit();
-    var pos: Position = .{ .x = 0, .y = 0 };
-    _c._glfw.platform.getWindowPos.?(self.handle, &pos.x, &pos.y);
-    return pos;
+    var xpos: c_int = 0;
+    var ypos: c_int = 0;
+    _c._glfw.platform.getWindowPos.?(self.handle, &xpos, &ypos);
+    return .{ .x = @intCast(xpos), .y = @intCast(ypos) };
 }
 
 pub fn setPosition(self: *Window, pos: Position) void {
     requireInit();
     if (self.handle.monitor != null) return;
-    _c._glfw.platform.setWindowPos.?(self.handle, pos.x, pos.y);
+    _c._glfw.platform.setWindowPos.?(self.handle, @intCast(pos.x), @intCast(pos.y));
 }
 
 pub fn getSize(self: *Window) Size {
@@ -145,9 +146,9 @@ pub fn getFrameSize(self: *Window) glfw.FrameSize {
     return f;
 }
 
-pub fn getContentScale(self: *Window) glfw.Scale {
+pub fn getContentScale(self: *Window) glfw.ContentScale {
     requireInit();
-    var scale: glfw.Scale = .{ .x = 0, .y = 0 };
+    var scale: glfw.ContentScale = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getWindowContentScale.?(self.handle, &scale.x, &scale.y);
     return scale;
 }
@@ -388,7 +389,7 @@ pub fn getMouseButton(self: *Window, key: input.Mouse) input.State {
     return @enumFromInt(self.handle.mouseButtons[k]);
 }
 
-pub fn setCursorPosition(self: *Window, pos: glfw.Position) !void {
+pub fn setCursorPosition(self: *Window, pos: glfw.Pos) !void {
     requireInit();
     if (pos.x != pos.x or pos.y != pos.y) return Error.InvalidValue;
     if (!self.isFocused()) return;
@@ -401,7 +402,7 @@ pub fn setCursorPosition(self: *Window, pos: glfw.Position) !void {
     }
 }
 
-pub fn getCursorPosition(self: *Window) glfw.Position {
+pub fn getCursorPosition(self: *Window) glfw.Pos {
     requireInit();
     if (self.handle.cursorMode == @intFromEnum(InputMode.Cursor.Disabled)) {
         return .{ .x = self.handle.virtualCursorPosX, .y = self.handle.virtualCursorPosY };

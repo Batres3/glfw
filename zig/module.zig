@@ -9,28 +9,28 @@ pub const Error = @import("error.zig").Error;
 
 // Constants
 pub const Version = struct {
-    pub const Major = c.GLFW_VERSION_MAJOR;
-    pub const Minor = c.GLFW_VERSION_MINOR;
-    pub const Revision = c.GLFW_VERSION_REVISION;
+    pub const major = c.GLFW_VERSION_MAJOR;
+    pub const minor = c.GLFW_VERSION_MINOR;
+    pub const revision = c.GLFW_VERSION_REVISION;
 };
 // These are completely unnecessary, but glfw offers them so why not
 pub const True = 1;
 pub const False = 0;
 // Utility structs for functions
-pub const Position = struct { x: f64, y: f64 };
-pub const iPosition = struct { x: c_int, y: c_int };
-pub const Size = struct { width: c_uint, height: c_uint };
-pub const Workarea = struct { position: iPosition, size: Size };
+pub const Pos = struct { x: f64, y: f64 };
+pub const uPos = struct { x: u32, y: u32 };
+pub const Size = struct { width: u32, height: u32 };
+pub const Workarea = struct { position: uPos, size: Size };
 pub const FrameSize = struct { left: c_int, right: c_int, top: c_int, bottom: c_int };
-pub const Scale = struct { x: f32, y: f32 };
+pub const ContentScale = struct { x: f32, y: f32 };
 pub const VideoMode = struct { size: Size, bits: struct { r: c_int, g: c_int, b: c_int }, refreshRate: c_int };
 pub const GammaRamp = c.GLFWgammaramp;
 pub const GamepadState = c.GLFWgamepadstate;
 
-pub const Monitor = @import("monitor.zig");
-pub const Window = @import("window.zig");
-pub const Cursor = @import("cursor.zig");
-pub const Joystick = @import("joystick.zig");
+pub const Monitor = @import("Monitor.zig");
+pub const Window = @import("Window.zig");
+pub const Cursor = @import("Cursor.zig");
+pub const Joystick = @import("Joystick.zig");
 pub const Image = c.GLFWimage;
 
 pub fn init() Error!void {

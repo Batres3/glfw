@@ -1,6 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
 const expect = std.testing.expect;
+const allocator = std.testing.allocator;
 
 test "glfw init hits" {
     glfw.Hint.Init.set(.HatButtons, false);
@@ -11,9 +12,9 @@ test "glfw version" {
     var minor: c_int = 0;
     var rev: c_int = 0;
     glfw.c.glfwGetVersion(&major, &minor, &rev);
-    try expect(major == glfw.Version.Major);
-    try expect(minor == glfw.Version.Minor);
-    try expect(rev == glfw.Version.Revision);
+    try expect(major == glfw.Version.major);
+    try expect(minor == glfw.Version.minor);
+    try expect(rev == glfw.Version.revision);
 }
 // TODO: Find a way to test if the function actually panicks
 // https://github.com/ziglang/zig/issues/1356
@@ -43,14 +44,14 @@ test "glfw monitor" {
     const monitors = glfw.Monitor.getAll();
     var primary = glfw.Monitor.getPrimary();
 
-    try expect(monitors[0] == primary.handle);
+    try expect(std.meta.eql(monitors[0], primary));
 
     // Can't really check without knowing some things about the setup,
     // but we at least check that the functions can run
-    _ = primary.getPosition();
-    _ = primary.getWorkarea();
+    _ = try primary.getPosition();
+    _ = try primary.getWorkarea();
     _ = primary.getPhysicalSize();
-    _ = primary.getContentScale();
+    _ = try primary.getContentScale();
     _ = primary.getName();
     // User pointer
     const TestPtr = struct { name: []const u8, othervar: u32 };
@@ -60,17 +61,23 @@ test "glfw monitor" {
     try expect(usr.othervar == ptr.othervar);
 
     // Callback
-    _ = glfw.Monitor.setCallback(null);
+    const Holder = struct {
+        pub fn monitorCallback(monitor: glfw.Monitor, event: glfw.Monitor.Event) void {
+            _ = monitor;
+            _ = event;
+        }
+    };
+    _ = glfw.Monitor.setCallback(Holder.monitorCallback);
 
     // Video modes
-    _ = primary.getVideoModes();
-    _ = primary.getVideoMode();
+    _ = try primary.getVideoModes();
+    _ = try primary.getVideoMode();
 
     // Gamma
     try primary.setGamma(1);
     const res = try primary.getGammaRamp();
     if (res) |ramp| {
-        primary.setGammaRamp(ramp);
+        try primary.setGammaRamp(ramp);
     }
 }
 test "glfw window" {
@@ -189,7 +196,7 @@ test "glfw window" {
     }
     {
         // Cursor
-        if (glfw.Cursor.init(.Hand)) |c| {
+        if (glfw.Cursor.initStandard(.pointing_hand)) |c| {
             var cursor = c;
             defer cursor.deinit();
 
