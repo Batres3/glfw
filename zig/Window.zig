@@ -1169,10 +1169,6 @@ pub fn getCursorMode(self: Window) InputMode.Cursor {
     requireInit();
     return @enumFromInt(self.handle.cursorMode);
 }
-pub fn rawMouseMotionSupported() bool {
-    requireInit();
-    return _c._glfw.platform.rawMouseMotionSupported.?() != 0;
-}
 /// Sets whether the raw mouse motion input mode is enabled, if enabled unscaled and unaccelerated
 /// mouse motion events will be sent, otherwise standard mouse motion events respecting the user's
 /// OS settings will be sent.
@@ -1181,7 +1177,7 @@ pub fn rawMouseMotionSupported() bool {
 /// Call glfw.rawMouseMotionSupported to check for support.
 pub fn setRawMouseMotion(self: Window, value: bool) !void {
     requireInit();
-    if (!rawMouseMotionSupported()) return Error.FeatureUnavailable;
+    if (!glfw.rawMouseMotionSupported()) return Error.FeatureUnavailable;
     const val: c_int = @intFromBool(value);
     if (self.handle.rawMouseMotion == val) return;
 

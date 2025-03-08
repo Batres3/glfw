@@ -205,38 +205,55 @@ pub const Mouse = enum(c_int) {
 
 pub const Gamepad = struct {
     pub const Button = enum(c_int) {
-        A = c.GLFW_GAMEPAD_BUTTON_A,
-        B = c.GLFW_GAMEPAD_BUTTON_B,
-        X = c.GLFW_GAMEPAD_BUTTON_X,
-        Y = c.GLFW_GAMEPAD_BUTTON_Y,
-        LeftBumper = c.GLFW_GAMEPAD_BUTTON_LEFT_BUMPER,
-        RightBumper = c.GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER,
-        Back = c.GLFW_GAMEPAD_BUTTON_BACK,
-        Start = c.GLFW_GAMEPAD_BUTTON_START,
-        Guide = c.GLFW_GAMEPAD_BUTTON_GUIDE,
-        LeftThumb = c.GLFW_GAMEPAD_BUTTON_LEFT_THUMB,
-        RightThumb = c.GLFW_GAMEPAD_BUTTON_RIGHT_THUMB,
-        DpadUp = c.GLFW_GAMEPAD_BUTTON_DPAD_UP,
-        DpadRight = c.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,
-        DpadDown = c.GLFW_GAMEPAD_BUTTON_DPAD_DOWN,
-        DpadLeft = c.GLFW_GAMEPAD_BUTTON_DPAD_LEFT,
-        Last = c.GLFW_GAMEPAD_BUTTON_LAST,
-
-        // Alternatives
-        Cross = c.GLFW_GAMEPAD_BUTTON_CROSS,
-        Circle = c.GLFW_GAMEPAD_BUTTON_CIRCLE,
-        Square = c.GLFW_GAMEPAD_BUTTON_SQUARE,
-        Triangle = c.GLFW_GAMEPAD_BUTTON_TRIANGLE,
+        a = c.GLFW_GAMEPAD_BUTTON_A,
+        b = c.GLFW_GAMEPAD_BUTTON_B,
+        x = c.GLFW_GAMEPAD_BUTTON_X,
+        y = c.GLFW_GAMEPAD_BUTTON_Y,
+        left_bumper = c.GLFW_GAMEPAD_BUTTON_LEFT_BUMPER,
+        right_bumper = c.GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER,
+        back = c.GLFW_GAMEPAD_BUTTON_BACK,
+        start = c.GLFW_GAMEPAD_BUTTON_START,
+        guide = c.GLFW_GAMEPAD_BUTTON_GUIDE,
+        left_thumb = c.GLFW_GAMEPAD_BUTTON_LEFT_THUMB,
+        right_thumb = c.GLFW_GAMEPAD_BUTTON_RIGHT_THUMB,
+        dpad_up = c.GLFW_GAMEPAD_BUTTON_DPAD_UP,
+        dpad_right = c.GLFW_GAMEPAD_BUTTON_DPAD_RIGHT,
+        dpad_down = c.GLFW_GAMEPAD_BUTTON_DPAD_DOWN,
+        dpad_left = c.GLFW_GAMEPAD_BUTTON_DPAD_LEFT,
+        pub const cross = .a;
+        pub const circle = .b;
+        pub const square = .x;
+        pub const triangle = .y;
     };
 
-    /// Gamepad axes, C convention is GLFW_GAMEPAD_AXIS_
     pub const Axis = enum(c_int) {
-        LeftX = c.GLFW_GAMEPAD_AXIS_LEFT_X,
-        LeftY = c.GLFW_GAMEPAD_AXIS_LEFT_Y,
-        RightX = c.GLFW_GAMEPAD_AXIS_RIGHT_X,
-        RightY = c.GLFW_GAMEPAD_AXIS_RIGHT_Y,
-        LeftTrigger = c.GLFW_GAMEPAD_AXIS_LEFT_TRIGGER,
-        RightTrigger = c.GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER,
-        Last = c.GLFW_GAMEPAD_AXIS_LAST,
+        left_x = c.GLFW_GAMEPAD_AXIS_LEFT_X,
+        left_y = c.GLFW_GAMEPAD_AXIS_LEFT_Y,
+        right_x = c.GLFW_GAMEPAD_AXIS_RIGHT_X,
+        right_y = c.GLFW_GAMEPAD_AXIS_RIGHT_Y,
+        left_trigger = c.GLFW_GAMEPAD_AXIS_LEFT_TRIGGER,
+        right_trigger = c.GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER,
+    };
+
+    pub const State = struct {
+        /// The states of each gamepad button (see gamepad_buttons), `glfw.Action.press` or `glfw.Action.release`.
+        ///
+        /// Use the enumeration helper e.g. `.getButton(.dpad_up)` to access these indices.
+        buttons: [15]u8,
+
+        /// The states of each gamepad axis (see gamepad_axes), in the range -1.0 to 1.0 inclusive.
+        ///
+        /// Use the enumeration helper e.g. `.getAxis(.left_x)` to access these indices.
+        axes: [6]f32,
+
+        /// Returns the state of the specified gamepad button.
+        pub fn getButton(self: @This(), which: Button) Action {
+            return @as(Action, @enumFromInt(self.buttons[@as(u32, @intCast(@intFromEnum(which)))]));
+        }
+
+        /// Returns the status of the specified gamepad axis, in the range -1.0 to 1.0 inclusive.
+        pub fn getAxis(self: @This(), which: Axis) f32 {
+            return self.axes[@as(u32, @intCast(@intFromEnum(which)))];
+        }
     };
 };

@@ -4,17 +4,18 @@ const expect = std.testing.expect;
 const allocator = std.testing.allocator;
 
 test "glfw init hits" {
-    glfw.Hint.Init.set(.HatButtons, false);
-    glfw.Hint.Init.Cocoa.set(.Menubar, true);
+    var hints: glfw.InitHints = .{};
+    hints.joystick_hat_buttons = false;
+    hints.cocoa.menubar = true;
 }
 test "glfw version" {
     var major: c_int = 0;
     var minor: c_int = 0;
     var rev: c_int = 0;
     glfw.c.glfwGetVersion(&major, &minor, &rev);
-    try expect(major == glfw.Version.major);
-    try expect(minor == glfw.Version.minor);
-    try expect(rev == glfw.Version.revision);
+    try expect(major == glfw.version.major);
+    try expect(minor == glfw.version.minor);
+    try expect(rev == glfw.version.revision);
 }
 // TODO: Find a way to test if the function actually panicks
 // https://github.com/ziglang/zig/issues/1356
@@ -38,7 +39,7 @@ test "glfw error callback" {
 }
 
 test "glfw monitor" {
-    try glfw.init();
+    try glfw.init(.{});
     defer glfw.deinit();
 
     const monitors = glfw.Monitor.getAll();
@@ -81,7 +82,7 @@ test "glfw monitor" {
     }
 }
 test "glfw window" {
-    try glfw.init();
+    try glfw.init(.{});
     defer glfw.deinit();
 
     const hints: glfw.Window.Hints = .{ .focused = true };
@@ -181,7 +182,7 @@ test "glfw window" {
         window.setCursorMode(.normal);
         try expect(window.getCursorMode() == .normal);
         // RawMouseMotion
-        if (glfw.Window.rawMouseMotionSupported()) {
+        if (glfw.rawMouseMotionSupported()) {
             try window.setRawMouseMotion(true);
             try expect(window.getRawMouseMotion());
             try window.setRawMouseMotion(false);
@@ -226,7 +227,7 @@ test "glfw window" {
 }
 
 test "glfw input" {
-    try glfw.init();
+    try glfw.init(.{});
     defer glfw.deinit();
 
     try expect(std.mem.eql(u8, "a", glfw.Input.Key.getName(.a).?));
@@ -241,7 +242,7 @@ test "glfw input" {
     try expect(std.mem.eql(u8, glfw.getClipboardString(), "Test string"));
 
     // Joysticks
-    if (glfw.Joystick.init(._1)) |joystick| {
+    if (glfw.Joystick.init(.one)) |joystick| {
         // defer j.deinit() doesn't actually do anything at the moment
         var j = joystick;
         _ = j.isPresent();
@@ -252,14 +253,20 @@ test "glfw input" {
         _ = j.getUserPointer();
         _ = j.isGamepad();
         _ = j.getGamepadName();
-        var state: glfw.GamepadState = glfw.GamepadState{};
-        _ = j.getGamepadState(&state);
+        _ = j.getGamepadState();
     }
+
+    // Time
+    try glfw.setTime(0);
+    const t = glfw.getTime();
+    try expect(t < 0.01);
+    _ = glfw.getTimerValue();
+    _ = glfw.getTimerFrequency();
 }
 
 test "glfw vulkan" {
     if (glfw.build_options.vulkan) {
-        try glfw.init();
+        try glfw.init(.{});
         defer glfw.deinit();
         if (glfw.vulkan_supported()) {
             if (glfw.getRequiredInstanceExtensions()) |extensions| {
