@@ -3,85 +3,85 @@ const std = @import("std");
 const internal = @import("internal.zig");
 const c = internal.c;
 const _c = internal._c;
-pub const State = enum(c_int) {
-    Release = c.GLFW_RELEASE,
-    Press = c.GLFW_PRESS,
-    Repeat = c.GLFW_REPEAT,
+pub const Action = enum(c_int) {
+    release = c.GLFW_RELEASE,
+    press = c.GLFW_PRESS,
+    repeat = c.GLFW_REPEAT,
 };
 
 pub const Key = enum(c_int) {
     // Unknown = c.GLFW_KEY_UNKNOWN,
-    Space = c.GLFW_KEY_SPACE,
-    Apostrophe = c.GLFW_KEY_APOSTROPHE,
-    Comma = c.GLFW_KEY_COMMA,
-    Minus = c.GLFW_KEY_MINUS,
-    Period = c.GLFW_KEY_PERIOD,
-    Slash = c.GLFW_KEY_SLASH,
-    Num0 = c.GLFW_KEY_0,
-    Num1 = c.GLFW_KEY_1,
-    Num2 = c.GLFW_KEY_2,
-    Num3 = c.GLFW_KEY_3,
-    Num4 = c.GLFW_KEY_4,
-    Num5 = c.GLFW_KEY_5,
-    Num6 = c.GLFW_KEY_6,
-    Num7 = c.GLFW_KEY_7,
-    Num8 = c.GLFW_KEY_8,
-    Num9 = c.GLFW_KEY_9,
-    Semicolon = c.GLFW_KEY_SEMICOLON,
-    Equal = c.GLFW_KEY_EQUAL,
-    A = c.GLFW_KEY_A,
-    B = c.GLFW_KEY_B,
-    C = c.GLFW_KEY_C,
-    D = c.GLFW_KEY_D,
-    E = c.GLFW_KEY_E,
-    F = c.GLFW_KEY_F,
-    G = c.GLFW_KEY_G,
-    H = c.GLFW_KEY_H,
-    I = c.GLFW_KEY_I,
-    J = c.GLFW_KEY_J,
-    K = c.GLFW_KEY_K,
-    L = c.GLFW_KEY_L,
-    M = c.GLFW_KEY_M,
-    N = c.GLFW_KEY_N,
-    O = c.GLFW_KEY_O,
-    P = c.GLFW_KEY_P,
-    Q = c.GLFW_KEY_Q,
-    R = c.GLFW_KEY_R,
-    S = c.GLFW_KEY_S,
-    T = c.GLFW_KEY_T,
-    U = c.GLFW_KEY_U,
-    V = c.GLFW_KEY_V,
-    W = c.GLFW_KEY_W,
-    X = c.GLFW_KEY_X,
-    Y = c.GLFW_KEY_Y,
-    Z = c.GLFW_KEY_Z,
-    LeftBracket = c.GLFW_KEY_LEFT_BRACKET,
-    Backslash = c.GLFW_KEY_BACKSLASH,
-    RightBracket = c.GLFW_KEY_RIGHT_BRACKET,
-    GraveAccent = c.GLFW_KEY_GRAVE_ACCENT,
-    World1 = c.GLFW_KEY_WORLD_1,
-    World2 = c.GLFW_KEY_WORLD_2,
+    space = c.GLFW_KEY_SPACE,
+    apostrophe = c.GLFW_KEY_APOSTROPHE,
+    comma = c.GLFW_KEY_COMMA,
+    minus = c.GLFW_KEY_MINUS,
+    period = c.GLFW_KEY_PERIOD,
+    slash = c.GLFW_KEY_SLASH,
+    num0 = c.GLFW_KEY_0,
+    num1 = c.GLFW_KEY_1,
+    num2 = c.GLFW_KEY_2,
+    num3 = c.GLFW_KEY_3,
+    num4 = c.GLFW_KEY_4,
+    num5 = c.GLFW_KEY_5,
+    num6 = c.GLFW_KEY_6,
+    num7 = c.GLFW_KEY_7,
+    num8 = c.GLFW_KEY_8,
+    num9 = c.GLFW_KEY_9,
+    semicolon = c.GLFW_KEY_SEMICOLON,
+    equal = c.GLFW_KEY_EQUAL,
+    a = c.GLFW_KEY_A,
+    b = c.GLFW_KEY_B,
+    c = c.GLFW_KEY_C,
+    d = c.GLFW_KEY_D,
+    e = c.GLFW_KEY_E,
+    f = c.GLFW_KEY_F,
+    g = c.GLFW_KEY_G,
+    h = c.GLFW_KEY_H,
+    i = c.GLFW_KEY_I,
+    j = c.GLFW_KEY_J,
+    k = c.GLFW_KEY_K,
+    l = c.GLFW_KEY_L,
+    m = c.GLFW_KEY_M,
+    n = c.GLFW_KEY_N,
+    o = c.GLFW_KEY_O,
+    p = c.GLFW_KEY_P,
+    q = c.GLFW_KEY_Q,
+    r = c.GLFW_KEY_R,
+    s = c.GLFW_KEY_S,
+    t = c.GLFW_KEY_T,
+    u = c.GLFW_KEY_U,
+    v = c.GLFW_KEY_V,
+    w = c.GLFW_KEY_W,
+    x = c.GLFW_KEY_X,
+    y = c.GLFW_KEY_Y,
+    z = c.GLFW_KEY_Z,
+    left_bracket = c.GLFW_KEY_LEFT_BRACKET,
+    backslash = c.GLFW_KEY_BACKSLASH,
+    right_bracket = c.GLFW_KEY_RIGHT_BRACKET,
+    grave_accent = c.GLFW_KEY_GRAVE_ACCENT,
+    world1 = c.GLFW_KEY_WORLD_1,
+    world2 = c.GLFW_KEY_WORLD_2,
 
     // Function keys
-    Escape = c.GLFW_KEY_ESCAPE,
-    Enter = c.GLFW_KEY_ENTER,
-    Tab = c.GLFW_KEY_TAB,
-    Backspace = c.GLFW_KEY_BACKSPACE,
-    Insert = c.GLFW_KEY_INSERT,
-    Delete = c.GLFW_KEY_DELETE,
-    Right = c.GLFW_KEY_RIGHT,
-    Left = c.GLFW_KEY_LEFT,
-    Down = c.GLFW_KEY_DOWN,
-    Up = c.GLFW_KEY_UP,
-    PageUp = c.GLFW_KEY_PAGE_UP,
-    PageDown = c.GLFW_KEY_PAGE_DOWN,
-    Home = c.GLFW_KEY_HOME,
-    End = c.GLFW_KEY_END,
-    CapsLock = c.GLFW_KEY_CAPS_LOCK,
-    ScrollLock = c.GLFW_KEY_SCROLL_LOCK,
-    NumLock = c.GLFW_KEY_NUM_LOCK,
-    PrintScreen = c.GLFW_KEY_PRINT_SCREEN,
-    Pause = c.GLFW_KEY_PAUSE,
+    escape = c.GLFW_KEY_ESCAPE,
+    enter = c.GLFW_KEY_ENTER,
+    tab = c.GLFW_KEY_TAB,
+    backspace = c.GLFW_KEY_BACKSPACE,
+    insert = c.GLFW_KEY_INSERT,
+    delete = c.GLFW_KEY_DELETE,
+    right = c.GLFW_KEY_RIGHT,
+    left = c.GLFW_KEY_LEFT,
+    down = c.GLFW_KEY_DOWN,
+    up = c.GLFW_KEY_UP,
+    page_up = c.GLFW_KEY_PAGE_UP,
+    page_down = c.GLFW_KEY_PAGE_DOWN,
+    home = c.GLFW_KEY_HOME,
+    end = c.GLFW_KEY_END,
+    caps_lock = c.GLFW_KEY_CAPS_LOCK,
+    scroll_lock = c.GLFW_KEY_SCROLL_LOCK,
+    num_lock = c.GLFW_KEY_NUM_LOCK,
+    print_screen = c.GLFW_KEY_PRINT_SCREEN,
+    pause = c.GLFW_KEY_PAUSE,
     F1 = c.GLFW_KEY_F1,
     F2 = c.GLFW_KEY_F2,
     F3 = c.GLFW_KEY_F3,
@@ -107,32 +107,32 @@ pub const Key = enum(c_int) {
     F23 = c.GLFW_KEY_F23,
     F24 = c.GLFW_KEY_F24,
     F25 = c.GLFW_KEY_F25,
-    Kp0 = c.GLFW_KEY_KP_0,
-    Kp1 = c.GLFW_KEY_KP_1,
-    Kp2 = c.GLFW_KEY_KP_2,
-    Kp3 = c.GLFW_KEY_KP_3,
-    Kp4 = c.GLFW_KEY_KP_4,
-    Kp5 = c.GLFW_KEY_KP_5,
-    Kp6 = c.GLFW_KEY_KP_6,
-    Kp7 = c.GLFW_KEY_KP_7,
-    Kp8 = c.GLFW_KEY_KP_8,
-    Kp9 = c.GLFW_KEY_KP_9,
-    KpDecimal = c.GLFW_KEY_KP_DECIMAL,
-    KpDivide = c.GLFW_KEY_KP_DIVIDE,
-    KpMultiply = c.GLFW_KEY_KP_MULTIPLY,
-    KpSubtract = c.GLFW_KEY_KP_SUBTRACT,
-    KpAdd = c.GLFW_KEY_KP_ADD,
-    KpEnter = c.GLFW_KEY_KP_ENTER,
-    KpEqual = c.GLFW_KEY_KP_EQUAL,
-    LeftShift = c.GLFW_KEY_LEFT_SHIFT,
-    LeftControl = c.GLFW_KEY_LEFT_CONTROL,
-    LeftAlt = c.GLFW_KEY_LEFT_ALT,
-    LeftSuper = c.GLFW_KEY_LEFT_SUPER,
-    RightShift = c.GLFW_KEY_RIGHT_SHIFT,
-    RightControl = c.GLFW_KEY_RIGHT_CONTROL,
-    RightAlt = c.GLFW_KEY_RIGHT_ALT,
-    RightSuper = c.GLFW_KEY_RIGHT_SUPER,
-    Menu = c.GLFW_KEY_MENU,
+    kp0 = c.GLFW_KEY_KP_0,
+    kp1 = c.GLFW_KEY_KP_1,
+    kp2 = c.GLFW_KEY_KP_2,
+    kp3 = c.GLFW_KEY_KP_3,
+    kp4 = c.GLFW_KEY_KP_4,
+    kp5 = c.GLFW_KEY_KP_5,
+    kp6 = c.GLFW_KEY_KP_6,
+    kp7 = c.GLFW_KEY_KP_7,
+    kp8 = c.GLFW_KEY_KP_8,
+    kp9 = c.GLFW_KEY_KP_9,
+    kp_decimal = c.GLFW_KEY_KP_DECIMAL,
+    kp_divide = c.GLFW_KEY_KP_DIVIDE,
+    kp_multiply = c.GLFW_KEY_KP_MULTIPLY,
+    kp_subtract = c.GLFW_KEY_KP_SUBTRACT,
+    kp_add = c.GLFW_KEY_KP_ADD,
+    kp_enter = c.GLFW_KEY_KP_ENTER,
+    kp_equal = c.GLFW_KEY_KP_EQUAL,
+    left_shift = c.GLFW_KEY_LEFT_SHIFT,
+    left_control = c.GLFW_KEY_LEFT_CONTROL,
+    left_alt = c.GLFW_KEY_LEFT_ALT,
+    left_super = c.GLFW_KEY_LEFT_SUPER,
+    right_shift = c.GLFW_KEY_RIGHT_SHIFT,
+    right_control = c.GLFW_KEY_RIGHT_CONTROL,
+    right_alt = c.GLFW_KEY_RIGHT_ALT,
+    right_super = c.GLFW_KEY_RIGHT_SUPER,
+    menu = c.GLFW_KEY_MENU,
     pub fn getScancode(key: Key) c_int {
         return _c._glfw.platform.getKeyScancode.?(@intFromEnum(key));
     }
@@ -140,9 +140,9 @@ pub const Key = enum(c_int) {
         const code = @intFromEnum(key);
         // TODO: Figure out a more "zig" way of doing this
         // see https://www.glfw.org/docs/latest/group__input.html#gaeaed62e69c3bd62b7ff8f7b19913ce4f
-        if (key != .KpEqual and
-            (code < @intFromEnum(Key.Kp0) or code > @intFromEnum(Key.KpAdd)) and
-            (code < @intFromEnum(Key.Apostrophe) or code > @intFromEnum(Key.World2)))
+        if (key != .kp_equal and
+            (code < @intFromEnum(Key.kp0) or code > @intFromEnum(Key.kp_add)) and
+            (code < @intFromEnum(Key.apostrophe) or code > @intFromEnum(Key.world2)))
             return null;
 
         const res: ?[*:0]const u8 = @ptrCast(_c._glfw.platform.getScancodeName.?(getScancode(key)));
@@ -150,27 +150,57 @@ pub const Key = enum(c_int) {
     }
 };
 
-pub const Modifier = enum(c_int) {
-    Shift = c.GLFW_MOD_SHIFT,
-    Control = c.GLFW_MOD_CONTROL,
-    Alt = c.GLFW_MOD_ALT,
-    Super = c.GLFW_MOD_SUPER,
-    CapsLock = c.GLFW_MOD_CAPS_LOCK,
-    NumLock = c.GLFW_MOD_NUM_LOCK,
+pub const RawModifier = enum(c_int) {
+    shift = c.GLFW_MOD_SHIFT,
+    control = c.GLFW_MOD_CONTROL,
+    alt = c.GLFW_MOD_ALT,
+    super = c.GLFW_MOD_SUPER,
+    caps_lock = c.GLFW_MOD_CAPS_LOCK,
+    num_lock = c.GLFW_MOD_NUM_LOCK,
+};
+
+/// A bitmask of all key modifiers
+pub const Modifier = packed struct(u8) {
+    shift: bool = false,
+    control: bool = false,
+    alt: bool = false,
+    super: bool = false,
+    caps_lock: bool = false,
+    num_lock: bool = false,
+    _padding: u2 = 0,
+
+    inline fn verifyIntType(comptime IntType: type) void {
+        comptime {
+            switch (@typeInfo(IntType)) {
+                .int => {},
+                else => @compileError("Int was not of int type"),
+            }
+        }
+    }
+
+    pub inline fn toInt(self: Modifier, comptime IntType: type) IntType {
+        verifyIntType(IntType);
+        return @as(IntType, @intCast(@as(u8, @bitCast(self))));
+    }
+
+    pub inline fn fromInt(flags: anytype) Modifier {
+        verifyIntType(@TypeOf(flags));
+        return @as(Modifier, @bitCast(@as(u8, @intCast(flags))));
+    }
 };
 
 pub const Mouse = enum(c_int) {
-    Left = c.GLFW_MOUSE_BUTTON_LEFT,
-    Right = c.GLFW_MOUSE_BUTTON_RIGHT,
-    Middle = c.GLFW_MOUSE_BUTTON_MIDDLE,
+    left = c.GLFW_MOUSE_BUTTON_LEFT,
+    right = c.GLFW_MOUSE_BUTTON_RIGHT,
+    middle = c.GLFW_MOUSE_BUTTON_MIDDLE,
     // _1 = c.GLFW_MOUSE_BUTTON_1,
     // _2 = c.GLFW_MOUSE_BUTTON_2,
     // _3 = c.GLFW_MOUSE_BUTTON_3,
-    _4 = c.GLFW_MOUSE_BUTTON_4,
-    _5 = c.GLFW_MOUSE_BUTTON_5,
-    _6 = c.GLFW_MOUSE_BUTTON_6,
-    _7 = c.GLFW_MOUSE_BUTTON_7,
-    _8 = c.GLFW_MOUSE_BUTTON_8,
+    four = c.GLFW_MOUSE_BUTTON_4,
+    five = c.GLFW_MOUSE_BUTTON_5,
+    six = c.GLFW_MOUSE_BUTTON_6,
+    seven = c.GLFW_MOUSE_BUTTON_7,
+    eight = c.GLFW_MOUSE_BUTTON_8,
 };
 
 pub const Gamepad = struct {

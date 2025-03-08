@@ -84,10 +84,9 @@ test "glfw window" {
     try glfw.init();
     defer glfw.deinit();
 
-    glfw.Hint.Window.set(.Focused, true);
-    glfw.Hint.Window.defaultHints();
+    const hints: glfw.Window.Hints = .{ .focused = true };
 
-    var window = try glfw.Window.init(640, 480, "OpenGL Test", null, null);
+    var window = try glfw.Window.init(640, 480, "OpenGL Test", null, null, hints);
     defer window.deinit();
 
     var count: f32 = 0;
@@ -100,7 +99,7 @@ test "glfw window" {
         // Title
         var title = window.getTitle();
         try expect(std.mem.eql(u8, title, "OpenGL Test"));
-        window.setTitle("New Title");
+        try window.setTitle("New Title");
         title = std.mem.span(glfw.c.glfwGetWindowTitle(@ptrCast(window.handle)));
         try expect(std.mem.eql(u8, title, "New Title"));
         title = window.getTitle();
@@ -130,9 +129,9 @@ test "glfw window" {
     }
     {
         // Size limits
-        try window.setSizeLimits(null, null, 100, null);
+        try window.setSizeLimits(.{ .width = null, .height = null }, .{ .width = 100, .height = null });
 
-        window.setSizeLimits(100, null, 10, null) catch |e| {
+        window.setSizeLimits(.{ .width = 100, .height = null }, .{ .width = 10, .height = null }) catch |e| {
             try expect(e == glfw.Error.InvalidValue);
         };
     }
@@ -176,11 +175,11 @@ test "glfw window" {
     }
     {
         // Input Modes
-        window.setInputMode(.StickyKeys, true);
-        try expect(window.getInputMode(.StickyKeys));
+        window.setInputMode(.sticky_keys, true);
+        try expect(window.getInputMode(.sticky_keys));
         // Cursor
-        window.setCursorMode(.Normal);
-        try expect(window.getCursorMode() == .Normal);
+        window.setCursorMode(.normal);
+        try expect(window.getCursorMode() == .normal);
         // RawMouseMotion
         if (glfw.Window.rawMouseMotionSupported()) {
             try window.setRawMouseMotion(true);
@@ -188,20 +187,28 @@ test "glfw window" {
             try window.setRawMouseMotion(false);
         }
 
-        try expect(window.getKey(.A) == glfw.Input.State.Release);
-        try expect(window.getMouseButton(.Left) == glfw.Input.State.Release);
+        try expect(window.getKey(.a) == glfw.Input.Action.release);
+        try expect(window.getMouseButton(.left) == glfw.Input.Action.release);
 
         _ = window.getCursorPosition();
         try window.setCursorPosition(.{ .x = 0, .y = 0 });
     }
     {
         // Cursor
-        if (glfw.Cursor.initStandard(.pointing_hand)) |c| {
+        if (try glfw.Cursor.initStandard(.pointing_hand)) |c| {
             var cursor = c;
             defer cursor.deinit();
 
             window.setCursor(cursor);
             try expect(window.handle.cursor == cursor.handle);
+        }
+
+        var image = try glfw.Image.init(allocator, 32, 32, 4);
+        defer image.deinit(allocator);
+
+        if (try glfw.Cursor.init(image, 0, 0)) |cursor| {
+            var c = cursor;
+            c.deinit();
         }
     }
     {
@@ -220,7 +227,7 @@ test "glfw input" {
     try glfw.init();
     defer glfw.deinit();
 
-    try expect(std.mem.eql(u8, "a", glfw.Input.Key.getName(.A).?));
+    try expect(std.mem.eql(u8, "a", glfw.Input.Key.getName(.a).?));
     // inline for (std.meta.fields(glfw.Input.Key)) |key| {
     //     if (glfw.Input.Key.getName(@enumFromInt(key.value))) |k| {
     //         std.debug.print("{s}, {s}\n", .{ k, key.name });

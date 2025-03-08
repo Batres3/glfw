@@ -3,8 +3,13 @@ const internal = @import("internal.zig");
 const requireInit = internal.requireInit;
 const c = internal.c;
 const _c = internal._c;
+const glfw = internal.glfw;
 const Cursor = @This();
 const Window = @import("Window.zig");
+pub const Position = struct {
+    x: f64,
+    y: f64,
+};
 
 handle: *_c._GLFWcursor,
 
@@ -80,11 +85,12 @@ pub const Shape = enum(c_int) {
 /// @pointer_lifetime The specified image data is copied before this function returns.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn init(image: *const c.GLFWimage, xhot: c_int, yhot: c_int) error{ PlatformError, InvalidValue }!?Cursor {
-    if (c.glfwCreateCursor(image, xhot, yhot)) |cursor| {
-        return .{ .handle = cursor };
+const SubError = error{ PlatformError, InvalidValue };
+pub fn init(image: glfw.Image, xhot: c_int, yhot: c_int) SubError!?Cursor {
+    if (c.glfwCreateCursor(&image.toC(), xhot, yhot)) |cursor| {
+        return .{ .handle = @ptrCast(@alignCast(cursor)) };
     }
-    internal.glfw.errorCheck();
+    try internal.subErrorCheck(SubError);
     return null;
 }
 
@@ -112,11 +118,9 @@ pub fn init(image: *const c.GLFWimage, xhot: c_int, yhot: c_int) error{ Platform
 /// 2. This uses a newer standard that not all cursor themes support.
 ///
 /// If the requested shape is not available, this function emits a CursorUnavailable error
-/// Possible errors include glfw.ErrorCode.PlatformError and glfw.ErrorCode.CursorUnavailable.
-/// null is returned in the event of an error.
 ///
 /// @thread_safety: This function must only be called from the main thread.
-pub fn initStandard(shape: Shape) ?Cursor {
+pub fn initStandard(shape: Shape) SubError!?Cursor {
     requireInit();
     var cursor: Cursor = .{ .handle = @ptrCast(@alignCast(_c._glfw_calloc(1, @sizeOf(_c._GLFWcursor)).?)) };
     cursor.handle.next = _c._glfw.cursorListHead;
@@ -126,6 +130,8 @@ pub fn initStandard(shape: Shape) ?Cursor {
         cursor.deinit();
         return null;
     }
+
+    try internal.subErrorCheck(SubError);
 
     return cursor;
 }

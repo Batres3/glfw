@@ -12,9 +12,6 @@ const requireInit = internal.requireInit;
 
 handle: *_c._GLFWmonitor = undefined,
 
-//
-// Static functions
-//
 /// This function should not be used directly.
 ///
 /// Generates a glfw.Monitor given a C pointer to a monitor
@@ -61,7 +58,7 @@ pub const Event = enum(c_int) {
 /// This function sets the monitor configuration callback, or removes the currently set callback.
 /// This is called when a monitor is connected to or disconnected from the system. Example:
 ///
-/// `event` may be one of .connected or .disconnected. More events may be added in the future.
+/// `event` may be one of .connected or .disconnected.
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub fn setCallback(callback: ?fn (monitor: Monitor, event: Event) void) void {
@@ -86,32 +83,22 @@ pub fn setCallback(callback: ?fn (monitor: Monitor, event: Event) void) void {
 
 /// A monitor position, in screen coordinates, of the upper left corner of the monitor on the
 /// virtual screen.
-const Pos = struct {
+const Position = struct {
     /// The x coordinate.
     x: u32,
     /// The y coordinate.
     y: u32,
 };
-const SubErrors = error{PlatformError};
-fn subErrorCheck() SubErrors!void {
-    glfw.errorCheck() catch |e| {
-        switch (e) {
-            glfw.Error.PlatformError => {
-                return SubErrors.PlatformError;
-            },
-            else => unreachable,
-        }
-    };
-}
 /// Returns the position of the monitor's viewport on the virtual screen.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getPosition(self: *Monitor) SubErrors!Pos {
+const SubErrors = error{PlatformError};
+pub fn getPosition(self: Monitor) SubErrors!Position {
     requireInit();
     var xpos: c_int = 0;
     var ypos: c_int = 0;
     _c._glfw.platform.getMonitorPos.?(self.handle, &xpos, &ypos);
-    try subErrorCheck();
+    try internal.subErrorCheck(SubErrors);
     return .{ .x = @intCast(xpos), .y = @intCast(ypos) };
 }
 /// The monitor workarea, in screen coordinates.
@@ -121,21 +108,21 @@ pub fn getPosition(self: *Monitor) SubErrors!Pos {
 /// window system task bar where present. If no task bar exists then the work area is the
 /// monitor resolution in screen coordinates.
 const Workarea = struct {
-    position: Pos,
+    position: Position,
     size: Size,
 };
 
 /// Retrieves the work area of the monitor.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getWorkarea(self: *Monitor) SubErrors!Workarea {
+pub fn getWorkarea(self: Monitor) SubErrors!Workarea {
     requireInit();
     var xpos: c_int = 0;
     var ypos: c_int = 0;
     var xsize: c_int = 0;
     var ysize: c_int = 0;
     _c._glfw.platform.getMonitorWorkarea.?(self.handle, &xpos, &ypos, &xsize, &ysize);
-    try subErrorCheck();
+    try internal.subErrorCheck(SubErrors);
     return .{
         .position = .{ .x = @intCast(xpos), .y = @intCast(ypos) },
         .size = .{ .width = @intCast(xsize), .height = @intCast(ysize) },
@@ -157,7 +144,7 @@ const PhysicalSize = struct {
 /// win32: On Windows 8 and earlier the physical size is calculated from
 /// the current resolution and system DPI instead of querying the monitor EDID data
 /// @thread_safety This function must only be called from the main thread.
-pub fn getPhysicalSize(self: *Monitor) PhysicalSize {
+pub fn getPhysicalSize(self: Monitor) PhysicalSize {
     requireInit();
     return .{ .width_mm = @intCast(self.handle.heightMM), .height_mm = @intCast(self.handle.widthMM) };
 }
@@ -181,11 +168,11 @@ const ContentScale = struct {
 /// Returns the content scale for the monitor.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getContentScale(self: *Monitor) SubErrors!ContentScale {
+pub fn getContentScale(self: Monitor) SubErrors!ContentScale {
     requireInit();
     var data: ContentScale = .{ .x = 0, .y = 0 };
     _c._glfw.platform.getMonitorContentScale.?(self.handle, &data.x, &data.y);
-    try subErrorCheck();
+    try internal.subErrorCheck(SubErrors);
     return data;
 }
 
@@ -199,7 +186,7 @@ pub fn getContentScale(self: *Monitor) SubErrors!ContentScale {
 /// yourself. It is valid until the specified monitor is disconnected or the library is terminated.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getName(self: *Monitor) []const u8 {
+pub fn getName(self: Monitor) []const u8 {
     requireInit();
     const len = std.mem.indexOfScalar(u8, &self.handle.name, 0).?;
     return self.handle.name[0..len];
@@ -226,7 +213,7 @@ pub fn setUserPointer(self: *Monitor, pointer: *anyopaque) void {
 /// disconnected.
 ///
 /// @thread_safety This function may be called from any thread. Access is not synchronized.
-pub fn getUserPointer(self: *Monitor) ?*anyopaque {
+pub fn getUserPointer(self: Monitor) ?*anyopaque {
     return self.handle.userPointer;
 }
 //
@@ -242,11 +229,11 @@ pub fn getUserPointer(self: *Monitor) ?*anyopaque {
 //     const tmp: [*c]c.GLFWvidmode = @ptrCast(self.handle.modes);
 //     return tmp[0..count];
 // }
-pub fn getVideoModes(self: *Monitor) SubErrors![]const c.GLFWvidmode {
+pub fn getVideoModes(self: Monitor) SubErrors![]const c.GLFWvidmode {
     requireInit();
     var count: c_int = 0;
     const res: [*c]const c.GLFWvidmode = @ptrCast(c.glfwGetVideoModes(@ptrCast(self.handle), &count));
-    try subErrorCheck();
+    try internal.subErrorCheck(SubErrors);
     return res[0..@intCast(count)];
 }
 /// Returns the current mode of the specified monitor.
@@ -256,11 +243,11 @@ pub fn getVideoModes(self: *Monitor) SubErrors![]const c.GLFWvidmode {
 /// iconified.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getVideoMode(self: *Monitor) SubErrors!?glfw.VideoMode {
+pub fn getVideoMode(self: Monitor) SubErrors!?glfw.VideoMode {
     requireInit();
     if (_c._glfw.platform.getVideoMode.?(self.handle, &self.handle.currentMode) == 0) return null;
     const current = self.handle.currentMode;
-    try subErrorCheck();
+    try internal.subErrorCheck(SubErrors);
     return .{
         .size = .{ .width = @intCast(current.width), .height = @intCast(current.height) },
         .bits = .{ .r = current.redBits, .g = current.greenBits, .b = current.blueBits },
@@ -270,20 +257,6 @@ pub fn getVideoMode(self: *Monitor) SubErrors!?glfw.VideoMode {
 //
 // Gamma
 //
-const GammaError = error{ PlatformError, FeatureUnavailable };
-fn gammaError() GammaError!void {
-    glfw.errorCheck() catch |e| {
-        switch (e) {
-            glfw.Error.PlatformError => {
-                return GammaError.PlatformError;
-            },
-            glfw.Error.FeatureUnavailable => {
-                return GammaError.FeatureUnavailable;
-            },
-            else => unreachable,
-        }
-    };
-}
 /// Generates a gamma ramp and sets it for the specified monitor.
 ///
 /// This function generates an appropriately sized gamma ramp from the specified exponent and then
@@ -299,21 +272,13 @@ fn gammaError() GammaError!void {
 /// emits glfw.ErrorCode.FeatureUnavailable
 ///
 /// @thread_safety This function must only be called from the main thread.
+const GammaError = error{ PlatformError, FeatureUnavailable };
 const SetGammaError = error{ PlatformError, FeatureUnavailable, InvalidValue };
 pub fn setGamma(self: *Monitor, gamma: f32) SetGammaError!void {
     requireInit();
     if (gamma < 0) return SetGammaError.InvalidValue;
     c.glfwSetGamma(@ptrCast(self.handle), gamma);
-    gammaError() catch |e| {
-        switch (e) {
-            GammaError.PlatformError => {
-                return SetGammaError.PlatformError;
-            },
-            GammaError.FeatureUnavailable => {
-                return SetGammaError.FeatureUnavailable;
-            },
-        }
-    };
+    try internal.subErrorCheck(SetGammaError);
 }
 
 /// Returns the current gamma ramp for the specified monitor.
@@ -323,29 +288,29 @@ pub fn setGamma(self: *Monitor, gamma: f32) SetGammaError!void {
 /// wayland: Gamma handling is a privileged protocol, this function will thus never be implemented
 /// and returns glfw.ErrorCode.FeatureUnavailable.
 ///
-/// The returned gamma ramp is `.owned = true` by GLFW, and is valid until the monitor is
+/// The returned gamma ramp is owned by GLFW, and is valid until the monitor is
 /// disconnected, this function is called again, or `glfw.deinit()` is called.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn getGammaRamp(self: *Monitor) GammaError!?*const glfw.GammaRamp {
+pub fn getGammaRamp(self: Monitor) GammaError!?glfw.GammaRamp {
+    requireInit();
     const res = c.glfwGetGammaRamp(@ptrCast(self.handle));
-    try gammaError();
-    return @ptrCast(res);
+    try internal.subErrorCheck(GammaError);
+    if (res) |ramp| return glfw.GammaRamp.fromC(ramp);
+    return null;
 }
 
 /// Sets the current gamma ramp for the specified monitor.
 ///
 /// This function sets the current gamma ramp for the specified monitor. The original gamma ramp
 /// for that monitor is saved by GLFW the first time this function is called and is restored by
-/// `glfw.terminate()`.
+/// `glfw.deinit()`.
 ///
 /// The software controlled gamma ramp is applied _in addition_ to the hardware gamma correction,
 /// which today is usually an approximation of sRGB gamma. This means that setting a perfectly
 /// linear ramp, or gamma 1.0, will produce the default (usually sRGB-like) behavior.
 ///
 /// For gamma correct rendering with OpenGL or OpenGL ES, see the glfw.srgb_capable hint.
-///
-/// Possible errors include glfw.ErrorCode.PlatformError, glfw.ErrorCode.FeatureUnavailable.
 ///
 /// The size of the specified gamma ramp should match the size of the current ramp for that
 /// monitor. On win32, the gamma ramp size must be 256.
@@ -356,13 +321,13 @@ pub fn getGammaRamp(self: *Monitor) GammaError!?*const glfw.GammaRamp {
 /// @pointer_lifetime The specified gamma ramp is copied before this function returns.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn setGammaRamp(self: *Monitor, ramp: *const c.GLFWgammaramp) GammaError!void {
+pub fn setGammaRamp(self: *Monitor, ramp: glfw.GammaRamp) GammaError!void {
     requireInit();
 
     if (self.handle.originalRamp.size == 0) {
         if (_c._glfw.platform.getGammaRamp.?(self.handle, &self.handle.originalRamp) == 0) return;
     }
 
-    _c._glfw.platform.setGammaRamp.?(self.handle, @ptrCast(ramp));
-    try gammaError();
+    _c._glfw.platform.setGammaRamp.?(self.handle, @ptrCast(&ramp.toC()));
+    try internal.subErrorCheck(GammaError);
 }

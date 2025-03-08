@@ -24,9 +24,14 @@ pub fn errorCheck() void {
         }
     }
 }
+
 pub fn requireInit() void {
     if (builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
         if (_c._glfw.initialized == 0)
             std.debug.panic("glfw function was called without initializing context", .{});
     }
+}
+
+pub fn subErrorCheck(subset: type) subset!void {
+    glfw.errorCheck() catch |e| return @as(subset, @errorCast(e));
 }

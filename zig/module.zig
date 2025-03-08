@@ -13,25 +13,22 @@ pub const Version = struct {
     pub const minor = c.GLFW_VERSION_MINOR;
     pub const revision = c.GLFW_VERSION_REVISION;
 };
-// These are completely unnecessary, but glfw offers them so why not
-pub const True = 1;
-pub const False = 0;
+pub const dont_care = -1;
 // Utility structs for functions
 pub const Pos = struct { x: f64, y: f64 };
 pub const uPos = struct { x: u32, y: u32 };
 pub const Size = struct { width: u32, height: u32 };
 pub const Workarea = struct { position: uPos, size: Size };
-pub const FrameSize = struct { left: c_int, right: c_int, top: c_int, bottom: c_int };
 pub const ContentScale = struct { x: f32, y: f32 };
 pub const VideoMode = struct { size: Size, bits: struct { r: c_int, g: c_int, b: c_int }, refreshRate: c_int };
-pub const GammaRamp = c.GLFWgammaramp;
 pub const GamepadState = c.GLFWgamepadstate;
 
 pub const Monitor = @import("Monitor.zig");
 pub const Window = @import("Window.zig");
 pub const Cursor = @import("Cursor.zig");
 pub const Joystick = @import("Joystick.zig");
-pub const Image = c.GLFWimage;
+pub const GammaRamp = @import("GammaRamp.zig");
+pub const Image = @import("Image.zig");
 
 pub fn init() Error!void {
     _ = c.glfwInit();
