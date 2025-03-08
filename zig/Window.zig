@@ -160,6 +160,7 @@ pub fn init(width: u32, height: u32, title: [:0]const u8, monitor: ?Monitor, sha
 pub fn deinit(self: Window) void {
     requireInit();
     c.glfwDestroyWindow(@ptrCast(self.handle));
+    internal.errorCheck();
 }
 
 /// Checks the close flag of the specified window.
@@ -192,6 +193,10 @@ pub fn getTitle(self: Window) []const u8 {
     return std.mem.span(self.handle.title);
 }
 
+// TODO: Many, if not all, of these functions have the possibility of emitting a PlatformError
+// right now we are handling that with an assert, but ideally we should check which platforms
+// have which functions and emit errors based on that
+
 /// Try to avoid using this function, set the title on window creation.
 ///
 /// This function sets the window title, encoded as UTF-8, of the specified window.
@@ -199,12 +204,11 @@ pub fn getTitle(self: Window) []const u8 {
 /// macos: The window title will not be updated until the next time you process events.
 ///
 /// @thread_safety This function must only be called from the main thread.
-const TitleError = error{PlatformError};
-pub fn setTitle(self: Window, title: [:0]const u8) TitleError!void {
+pub fn setTitle(self: Window, title: [:0]const u8) !void {
     requireInit();
     self.handle.title = _c._glfw_strdup(title);
     _c._glfw.platform.setWindowTitle.?(self.handle, title);
-    try internal.subErrorCheck(TitleError);
+    internal.errorCheck(); // PlatformError
 }
 
 /// Sets the icon for the specified window.
@@ -228,11 +232,10 @@ pub fn setTitle(self: Window, title: [:0]const u8) TitleError!void {
 /// in the Mac Developer Library.
 ///
 /// wayland: There is no existing protocol to change an icon, the window will thus inherit the one
-/// defined in the application's desktop file. This function will emit glfw.ErrorCode.FeatureUnavailable.
-///
-/// Possible errors include glfw.ErrorCode.InvalidValue, glfw.ErrorCode.FeatureUnavailable
+/// defined in the application's desktop file. This function will emit FeatureUnavailable.
 ///
 /// @thread_safety This function must only be called from the main thread.
+const IFPError = error{ InvalidValue, FeatureUnavailable, PlatformError };
 pub fn setIcon(self: Window, images: []const c.GLFWimage) IFPError!void {
     requireInit();
     c.glfwSetWindowIcon(@ptrCast(self.handle), images.len, images);
@@ -254,6 +257,7 @@ pub fn getPosition(self: Window) Position {
     var xpos: c_int = 0;
     var ypos: c_int = 0;
     _c._glfw.platform.getWindowPos.?(self.handle, &xpos, &ypos);
+    internal.errorCheck(); // PlatformError and FeatureUnavailable
     return .{ .x = @intCast(xpos), .y = @intCast(ypos) };
 }
 
@@ -265,13 +269,14 @@ pub fn getPosition(self: Window) Position {
 /// The window manager may put limits on what positions are allowed. GLFW cannot and should not override these limits.
 ///
 /// wayland: There is no way for an application to set the global position of its windows, this
-/// function will always emit glfw.ErrorCode.FeatureUnavailable.
+/// function will always emit glfw.Error.FeatureUnavailable.
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub fn setPosition(self: Window, pos: Position) void {
     requireInit();
     if (self.handle.monitor != null) return;
     _c._glfw.platform.setWindowPos.?(self.handle, @intCast(pos.x), @intCast(pos.y));
+    internal.errorCheck(); // PlatformError and FeatureUnavailable
 }
 
 /// Retrieves the size of the content area of the specified window.
@@ -286,8 +291,7 @@ pub fn getSize(self: Window) Size {
     var xsize: c_int = 0;
     var ysize: c_int = 0;
     _c._glfw.platform.getWindowSize.?(self.handle, &xsize, &ysize);
-    // PlatformError
-    internal.errorCheck();
+    internal.errorCheck(); // PlatformError
     return .{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
@@ -386,8 +390,6 @@ pub fn setSizeLimits(self: Window, min: SizeOptional, max: SizeOptional) IPError
 /// the user or by the compositor.
 ///
 /// @thread_safety This function must only be called from the main thread.
-///
-/// WARNING: On Wayland the aspect ratio will not be applied until the window is resized
 pub fn setAspectRatio(self: Window, numer: ?u32, denom: ?u32) void {
     requireInit();
     const n: c_int = if (numer) |num| @intCast(num) else -1;
@@ -412,6 +414,7 @@ pub fn getFramebufferSize(self: Window) Size {
     var xsize: c_int = 0;
     var ysize: c_int = 0;
     _c._glfw.platform.getFramebufferSize.?(self.handle, &xsize, &ysize);
+    internal.errorCheck(); // PlatformError
     return Size{ .width = @intCast(xsize), .height = @intCast(ysize) };
 }
 
@@ -510,7 +513,6 @@ pub fn getOpacity(self: Window) f32 {
 /// @thread_safety This function must only be called from the main thread.
 ///
 /// wayland: There is no way to set opacity, this function will return glfw.Error.FeatureUnavailable
-const IFPError = error{ InvalidValue, FeatureUnavailable, PlatformError };
 pub fn setOpacity(self: Window, opacity: f32) IFPError!void {
     requireInit();
     if (opacity != opacity or opacity < 0 or opacity > 1) return Error.InvalidValue;
@@ -790,12 +792,13 @@ pub const Attrib = enum(c_int) {
 /// glfw.Window.Attrib.iconified always returns `false`.
 pub fn getAttrib(self: Window, attrib: Attrib) Error!c_int {
     const res = c.glfwGetWindowAttrib(@ptrCast(self.handle), @intFromEnum(attrib));
-    try errorCheck();
+    try glfw.errorCheck();
     return res;
 }
 /// This function should not generally be used, window properties
 /// can be accessed through the relevant function or through the handle
-/// /// This function sets the value of an attribute of the specified window.
+///
+/// This function sets the value of an attribute of the specified window.
 ///
 /// The supported attributes are glfw.decorated, glfw.resizable, glfw.floating, glfw.auto_iconify,
 /// glfw.focus_on_show.
@@ -823,12 +826,10 @@ pub fn from(handle: *anyopaque) Window {
 /// window is moved. The callback is provided with the position, in screen coordinates, of the
 /// upper-left corner of the content area of the window.
 ///
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window that moved.
-/// @callback_param `xpos` the new x-coordinate, in screen coordinates, of the upper-left corner of
-/// the content area of the window.
-/// @callback_param `ypos` the new y-coordinate, in screen coordinates, of the upper-left corner of
+/// @callback_param `pos` the new position, in screen coordinates, of the upper-left corner of
 /// the content area of the window.
 ///
 /// wayland: This callback will never be called, as there is no way for an application to know its
@@ -863,12 +864,9 @@ pub inline fn setPosCallback(self: Window, comptime callback: ?fn (window: Windo
 /// of the window.
 ///
 /// @callback_param `window` the window that was resized.
-/// @callback_param `width` the new width, in screen coordinates, of the window.
-/// @callback_param `height` the new height, in screen coordinates, of the window.
+/// @callback_param `size` the new size, in screen coordinates, of the window.
 ///
 /// @thread_safety This function must only be called from the main thread.
-///
-/// see also: window_size
 pub inline fn setSizeCallback(self: Window, comptime callback: ?fn (window: Window, size: Size) void) void {
     requireInit();
 
@@ -901,8 +899,7 @@ pub inline fn setSizeCallback(self: Window, comptime callback: ?fn (window: Wind
 ///
 /// The close callback is not triggered by glfw.Window.deinit.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window that the user attempted to close.
 ///
@@ -937,9 +934,7 @@ pub inline fn setCloseCallback(self: Window, comptime callback: ?fn (window: Win
 /// the window contents are saved off-screen, this callback may be called only
 /// very infrequently or never at all.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window whose content needs to be refreshed.
 ///
@@ -972,9 +967,7 @@ pub inline fn setRefreshCallback(self: Window, comptime callback: ?fn (window: W
 /// that had been pressed. For more information, see window.setKeyCallback
 /// and window.setMouseButtonCallback.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window whose input focus has changed.
 /// @callback_param `focused` `true` if the window was given input focus, or `false` if it lost it.
@@ -1004,9 +997,7 @@ pub inline fn setFocusCallback(self: Window, comptime callback: ?fn (window: Win
 /// This function sets the iconification callback of the specified window, which
 /// is called when the window is iconified or restored.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window which was iconified or restored.
 /// @callback_param `iconified` `true` if the window was iconified, or `false` if it was restored.
@@ -1036,9 +1027,7 @@ pub inline fn setIconifyCallback(self: Window, comptime callback: ?fn (window: W
 /// This function sets the maximization callback of the specified window, which
 /// is called when the window is maximized or restored.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window which was maximized or restored.
 /// @callback_param `maximized` `true` if the window was maximized, or `false` if it was restored.
@@ -1068,16 +1057,13 @@ pub inline fn setMaximizeCallback(self: Window, comptime callback: ?fn (window: 
 /// This function sets the framebuffer resize callback of the specified window,
 /// which is called when the framebuffer of the specified window is resized.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window whose framebuffer was resized.
-/// @callback_param `width` the new width, in pixels, of the framebuffer.
-/// @callback_param `height` the new height, in pixels, of the framebuffer.
+/// @callback_param `size` the new size, in pixels, of the framebuffer.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub inline fn setFramebufferSizeCallback(self: Window, comptime callback: ?fn (window: Window, width: u32, height: u32) void) void {
+pub inline fn setFramebufferSizeCallback(self: Window, comptime callback: ?fn (window: Window, size: Size) void) void {
     requireInit();
 
     if (callback) |user_callback| {
@@ -1085,8 +1071,10 @@ pub inline fn setFramebufferSizeCallback(self: Window, comptime callback: ?fn (w
             pub fn framebufferSizeCallbackWrapper(handle: ?*c.GLFWwindow, width: c_int, height: c_int) callconv(.C) void {
                 @call(.always_inline, user_callback, .{
                     from(handle.?),
-                    @as(u32, @intCast(width)),
-                    @as(u32, @intCast(height)),
+                    Size{
+                        .width = @as(u32, @intCast(width)),
+                        .height = @as(u32, @intCast(height)),
+                    },
                 });
             }
         };
@@ -1102,9 +1090,7 @@ pub inline fn setFramebufferSizeCallback(self: Window, comptime callback: ?fn (w
 /// This function sets the window content scale callback of the specified window,
 /// which is called when the content scale of the specified window changes.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set
-/// callback.
+/// callback may be null to remove the currently set callback.
 ///
 /// @callback_param `window` the window whose content scale changed.
 /// @callback_param `scale` the new content scale of the window.
@@ -1140,8 +1126,6 @@ pub const InputMode = enum(c_int) {
     sticky_mouse_buttons = c.GLFW_STICKY_MOUSE_BUTTONS,
     lock_key_mods = c.GLFW_LOCK_KEY_MODS,
     unlimited_mouse_buttons = c.GLFW_UNLIMITED_MOUSE_BUTTONS,
-    //RawMouseMotion = c.GLFW_RAW_MOUSE_MOTION,
-    //Cursor = c.GLFW_CURSOR;
     pub const Cursor = enum(c_int) {
         /// Makes the cursor visible and behaving normally.
         normal = c.GLFW_CURSOR_NORMAL,
@@ -1228,9 +1212,6 @@ pub fn getRawMouseMotion(self: Window) bool {
 ///
 /// __Do not use this function__ to implement text input, use glfw.Window.setCharCallback instead.
 ///
-/// @param[in] window The desired window.
-/// @param[in] key The desired keyboard key (see keys).
-///
 /// @thread_safety This function must only be called from the main thread.
 pub fn getKey(self: Window, key: input.Key) input.Action {
     requireInit();
@@ -1250,9 +1231,6 @@ pub fn getKey(self: Window, key: input.Key) input.Action {
 /// If the glfw.sticky_mouse_buttons input mode is enabled, this function returns `true` the first
 /// time you call it for a mouse button that was pressed, even if that mouse button has already been
 /// released.
-///
-/// @param[in] button The desired mouse button.
-/// @return One of glfw.Input.Action
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub fn getMouseButton(self: Window, key: input.Mouse) input.Action {
@@ -1278,15 +1256,13 @@ pub fn getMouseButton(self: Window, key: input.Mouse) input.Action {
 /// If the cursor mode is `InputMode.Cursor.disabled` then the cursor position is unconstrained and
 /// limited only by the minimum and maximum values of a `double`.
 ///
-/// @param[in] window The desired window.
-/// @param[in] xpos The desired x-coordinate, relative to the left edge of the content area.
-/// @param[in] ypos The desired y-coordinate, relative to the top edge of the content area.
+/// @param[in] pos The desired position
 ///
 /// wayland: This function will only work when the cursor mode is `InputMode.Cursor.disabled`, otherwise
 /// it will do nothing.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn setCursorPosition(self: Window, pos: glfw.Pos) !void {
+pub fn setCursorPosition(self: Window, pos: Cursor.Position) !void {
     requireInit();
     if (pos.x != pos.x or pos.y != pos.y) return Error.InvalidValue;
     if (!self.isFocused()) return;
@@ -1296,7 +1272,7 @@ pub fn setCursorPosition(self: Window, pos: glfw.Pos) !void {
         self.handle.virtualCursorPosY = pos.y;
     } else {
         _c._glfw.platform.setCursorPos.?(self.handle, pos.x, pos.y);
-        internal.errorCheck();
+        internal.errorCheck(); // PlatformError and FeatureUnavailable
     }
 }
 
@@ -1314,12 +1290,6 @@ pub fn setCursorPosition(self: Window, pos: glfw.Pos) !void {
 /// Any or all of the position arguments may be null. If an error occurs, all non-null position
 /// arguments will be set to zero.
 ///
-/// @param[in] window The desired window.
-/// @param[out] xpos Where to store the cursor x-coordinate, relative to the left edge of the
-/// content area, or null.
-/// @param[out] ypos Where to store the cursor y-coordinate, relative to the to top edge of the
-/// content area, or null.
-///
 /// @thread_safety This function must only be called from the main thread.
 pub fn getCursorPosition(self: Window) Cursor.Position {
     requireInit();
@@ -1329,7 +1299,7 @@ pub fn getCursorPosition(self: Window) Cursor.Position {
     var x: f64 = 0;
     var y: f64 = 0;
     _c._glfw.platform.getCursorPos.?(self.handle, &x, &y);
-    internal.errorCheck();
+    internal.errorCheck(); // PlatformError
     return .{ .x = x, .y = y };
 }
 
@@ -1351,7 +1321,7 @@ pub fn setCursor(self: Window, cursor: ?Cursor) void {
     } else self.handle.cursor = null;
 
     _c._glfw.platform.setCursor.?(self.handle, self.handle.cursor);
-    internal.errorCheck();
+    internal.errorCheck(); // PlatformError
 }
 
 /// Sets the key callback.
@@ -1375,14 +1345,12 @@ pub fn setCursor(self: Window, cursor: ?Cursor) void {
 ///
 /// Sometimes GLFW needs to generate synthetic key events, in which case the scancode may be zero.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new key callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
 /// @callback_param[in] key The keyboard key (see keys) that was pressed or released.
 /// @callback_param[in] scancode The platform-specific scancode of the key.
 /// @callback_param[in] action `glfw.Action.press`, `glfw.Action.release` or `glfw.Action.repeat`.
-/// Future releases may add more actions.
 /// @callback_param[in] mods Bit field describing which modifier keys (see mods) were held down.
 ///
 /// @thread_safety This function must only be called from the main thread.
@@ -1424,8 +1392,7 @@ pub inline fn setKeyCallback(self: Window, comptime callback: ?fn (window: Windo
 /// modifier keys are held down that would prevent normal text input on that platform, for example a
 /// Super (Command) key on macOS or Alt key on Windows.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
 /// @callback_param[in] codepoint The Unicode code point of the character.
@@ -1450,11 +1417,6 @@ pub inline fn setCharCallback(self: Window, comptime callback: ?fn (window: Wind
     }
 }
 
-pub fn setCharModsCallback(self: Window, callback: c.GLFWcharmodsfun) void {
-    requireInit();
-    self.handle.callbacks.charmods = callback;
-}
-
 /// Sets the mouse button callback.
 ///
 /// This function sets the mouse button callback of the specified window, which is called when a
@@ -1465,13 +1427,11 @@ pub fn setCharModsCallback(self: Window, callback: c.GLFWcharmodsfun) void {
 /// synthetic ones are generated after the focus loss event has been processed, i.e. after the
 /// window focus callback (see glfw.Window.setFocusCallback) has been called.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
 /// @callback_param[in] button The mouse button that was pressed or released.
-/// @callback_param[in] action One of `glfw.Action.press` or `glfw.Action.release`. Future releases
-/// may add more actions.
+/// @callback_param[in] action One of `glfw.Action.press` or `glfw.Action.release`.
 /// @callback_param[in] mods Bit field describing which modifier keys (see mods) were held down.
 ///
 /// @thread_safety This function must only be called from the main thread.
@@ -1502,13 +1462,10 @@ pub inline fn setMouseButtonCallback(self: Window, comptime callback: ?fn (windo
 /// the cursor is moved. The callback is provided with the position, in screen coordinates, relative
 /// to the upper-left corner of the content area of the window.
 ///
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
-/// @callback_param[in] xpos The new cursor x-coordinate, relative to the left edge of the content
-/// area.
-/// callback_@param[in] ypos The new cursor y-coordinate, relative to the top edge of the content
-/// area.
+/// @callback_param[in] pos The new cursor position
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub inline fn setCursorPosCallback(self: Window, comptime callback: ?fn (window: Window, pos: Cursor.Position) void) void {
@@ -1538,7 +1495,7 @@ pub inline fn setCursorPosCallback(self: Window, comptime callback: ?fn (window:
 /// This function sets the cursor boundary crossing callback of the specified window, which is
 /// called when the cursor enters or leaves the content area of the window.
 ///
-/// @param[in] callback The new callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
 /// @callback_param[in] entered `true` if the cursor entered the window's content area, or `false`
@@ -1572,12 +1529,10 @@ pub inline fn setCursorEnterCallback(self: Window, comptime callback: ?fn (windo
 /// The scroll callback receives all scrolling input, like that from a mouse wheel or a touchpad
 /// scrolling area.
 ///
-/// @param[in] window The window whose callback to set.
-/// @param[in] callback The new scroll callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
-/// @callback_param[in] xoffset The scroll offset along the x-axis.
-/// @callback_param[in] yoffset The scroll offset along the y-axis.
+/// @callback_param[in] offset The scroll offset along the x and y axes.
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub inline fn setScrollCallback(self: Window, comptime callback: ?fn (window: Window, offset: Cursor.Position) void) void {
@@ -1611,16 +1566,13 @@ pub inline fn setScrollCallback(self: Window, comptime callback: ?fn (window: Wi
 /// are not guaranteed to be valid after the callback has returned. If you wish to use them after
 /// the callback returns, you need to make a deep copy.
 ///
-/// @param[in] callback The new file drop callback, or null to remove the currently set callback.
+/// The callback may be null to remove the currently set callback.
 ///
 /// @callback_param[in] window The window that received the event.
-/// @callback_param[in] path_count The number of dropped paths.
 /// @callback_param[in] paths The UTF-8 encoded file and/or directory path names.
 ///
 /// @callback_pointer_lifetime The path array and its strings are valid until the callback function
 /// returns.
-///
-/// wayland: File drop is currently unimplemented.
 ///
 /// @thread_safety This function must only be called from the main thread.
 pub inline fn setDropCallback(self: Window, comptime callback: ?fn (window: Window, paths: [][*:0]const u8) void) void {
@@ -1646,24 +1598,6 @@ pub inline fn setDropCallback(self: Window, comptime callback: ?fn (window: Wind
 // Context
 //
 
-pub fn makeCurrentContext(self: Window) !void {
-    requireInit();
-    c.glfwMakeContextCurrent(@ptrCast(self.handle));
-    try glfw.errorCheck();
-    // TODO: Check why this fails, it seems like tls.posix is not set? but it works when it runs the C code?
-    // if (self.handle.context.client == @intFromEnum(glfw.Hint.Context.API.Client.Value.NoAPI)) {
-    //     return Error.NoWindowContext;
-    // }
-    //
-    // if (_c._glfwPlatformGetTls(&_c._glfw.contextSlot)) |ptr| {
-    //     const prev: *_c._GLFWwindow = @ptrCast(@alignCast(ptr));
-    //     if (self.handle.context.source != prev.context.source)
-    //         prev.context.makeCurrent.?(null);
-    // }
-    //
-    // self.handle.context.makeCurrent.?(self.handle);
-}
-
 pub fn swapBuffers(self: Window) !void {
     requireInit();
     if (self.handle.context.client == @intFromEnum(glfw.Hint.Context.API.Client.Value.NoAPI))
@@ -1674,95 +1608,6 @@ pub fn swapBuffers(self: Window) !void {
 //
 // Hints
 //
-const Hint = enum(c_int) {
-    focused = c.GLFW_FOCUSED,
-    iconified = c.GLFW_ICONIFIED,
-    visible = c.GLFW_VISIBLE,
-    decorated = c.GLFW_DECORATED,
-    resizable = c.GLFW_RESIZABLE,
-    auto_iconify = c.GLFW_AUTO_ICONIFY,
-    floating = c.GLFW_FLOATING,
-    maximized = c.GLFW_MAXIMIZED,
-    center_cursor = c.GLFW_CENTER_CURSOR,
-    hovered = c.GLFW_HOVERED,
-    focus_on_show = c.GLFW_FOCUS_ON_SHOW,
-    //Titlebar = c.GLFW_TITLEBAR,
-    mouse_passthrough = c.GLFW_MOUSE_PASSTHROUGH,
-    refresh_rate = c.GLFW_REFRESH_RATE,
-    pub const Bits = enum(c_int) {
-        red = c.GLFW_RED_BITS,
-        green = c.GLFW_GREEN_BITS,
-        blue = c.GLFW_BLUE_BITS,
-        alpha = c.GLFW_ALPHA_BITS,
-        depth = c.GLFW_DEPTH_BITS,
-        stencil = c.GLFW_STENCIL_BITS,
-        pub const Accumulate = enum(c_int) {
-            red = c.GLFW_ACCUM_RED_BITS,
-            green = c.GLFW_ACCUM_GREEN_BITS,
-            blue = c.GLFW_ACCUM_BLUE_BITS,
-            alpha = c.GLFW_ACCUM_ALPHA_BITS,
-        };
-    };
-    /// Framebuffer hints
-    pub const Framebuffer = enum(c_int) {
-        transparent = c.GLFW_TRANSPARENT_FRAMEBUFFER,
-        aux_buffers = c.GLFW_AUX_BUFFERS,
-        stereo = c.GLFW_STEREO,
-        samples = c.GLFW_SAMPLES,
-        srgb_capable = c.GLFW_SRGB_CAPABLE,
-        doublebuffer = c.GLFW_DOUBLEBUFFER,
-        scale = c.GLFW_SCALE_FRAMEBUFFER,
-    };
-    /// Context hints
-    pub const Context = enum(c_int) {
-        revision = c.GLFW_CONTEXT_REVISION,
-        debug = c.GLFW_CONTEXT_DEBUG,
-        no_error = c.GLFW_CONTEXT_NO_ERROR,
-        scale_to_monitor = c.GLFW_SCALE_TO_MONITOR,
-        pub const API = struct {
-            pub const Client = struct {
-                pub const Value = enum(c_int) {
-                    no_api = c.GLFW_NO_API,
-                    open_gl = c.GLFW_OPENGL_API,
-                    open_gles = c.GLFW_OPENGL_ES_API,
-                };
-            };
-            pub const Creation = enum(c_int) {
-                pub const Value = enum(c_int) {
-                    native = c.GLFW_NATIVE_CONTEXT_API,
-                    egl = c.GLFW_EGL_CONTEXT_API,
-                    osmesa = c.GLFW_OSMESA_CONTEXT_API,
-                };
-            };
-        };
-        pub const Version = enum(c_int) {
-            major = c.GLFW_CONTEXT_VERSION_MAJOR,
-            minor = c.GLFW_CONTEXT_VERSION_MINOR,
-            revision = c.GLFW_CONTEXT_REVISION,
-        };
-        pub const OpenGL = enum(c_int) {
-            forward_compat = c.GLFW_OPENGL_FORWARD_COMPAT,
-            /// This is deprecated, use Context.Debug instead
-            debug_context = c.GLFW_OPENGL_DEBUG_CONTEXT,
-        };
-    };
-    pub const Win32 = enum(c_int) {
-        keyboard_menu = c.GLFW_WIN32_KEYBOARD_MENU,
-        show_default = c.GLFW_WIN32_SHOWDEFAULT,
-    };
-    pub const Cocoa = enum(c_int) {
-        graphics_switching = c.GLFW_COCOA_GRAPHICS_SWITCHING,
-        frame_name = c.GLFW_COCOA_FRAME_NAME,
-    };
-    pub const X11 = enum(c_int) {
-        class_name = c.GLFW_X11_CLASS_NAME,
-        instance_name = c.GLFW_X11_INSTANCE_NAME,
-    };
-    pub const Wayland = enum(c_int) {
-        app_id = c.GLFW_WAYLAND_APP_ID,
-    };
-};
-
 pub const Hints = struct {
     /// Specifies whether the windowed mode window will be resizable by the user.
     /// The window will still be resizable using the .setSize function.

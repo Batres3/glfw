@@ -114,33 +114,4 @@ pub fn getTimerFrequency() u64 {
 //
 // Context
 //
-// TODO: fix tls problems with both of these
-pub fn getCurrentContext() ?Window {
-    internal.requireInit();
-    if (c.glfwGetCurrentContext()) |ptr| {
-        return .{ .handle = @ptrCast(@alignCast(ptr)) };
-    } else return null;
-}
-
-pub fn swapInterval(interval: c_int) !void {
-    internal.requireInit();
-    c.glfwSwapInterval(interval);
-    try errorCheck();
-}
-pub const OpenGL = struct {
-    pub fn extensionSupported(extension: [*:0]const u8) !bool {
-        internal.requireInit();
-        const res = c.glfwExtensionSupported(extension);
-        try errorCheck();
-        return res != 0;
-    }
-
-    pub fn getProcAddress(procname: [*:0]const u8) !c.GLFWglproc {
-        internal.requireInit();
-        const res = c.glfwGetProcAddress(procname);
-        try errorCheck();
-        return res;
-    }
-};
-
-pub const Vulkan = if (build_options.vulkan) @import("vulkan.zig") else struct {};
+pub usingnamespace if (build_options.vulkan) @import("vulkan.zig") else @import("opengl.zig");

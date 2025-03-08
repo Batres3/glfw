@@ -7,7 +7,9 @@ const glfw = internal.glfw;
 const Cursor = @This();
 const Window = @import("Window.zig");
 pub const Position = struct {
+    /// The x-coordinate of the cursor, relative to the left edge of the content area.
     x: f64,
+    /// The y-coordinate os the cursor, relative to the top edge of the content area.
     y: f64,
 };
 
@@ -85,7 +87,6 @@ pub const Shape = enum(c_int) {
 /// @pointer_lifetime The specified image data is copied before this function returns.
 ///
 /// @thread_safety This function must only be called from the main thread.
-const SubError = error{ PlatformError, InvalidValue };
 pub fn init(image: glfw.Image, xhot: c_int, yhot: c_int) SubError!?Cursor {
     if (c.glfwCreateCursor(&image.toC(), xhot, yhot)) |cursor| {
         return .{ .handle = @ptrCast(@alignCast(cursor)) };
@@ -93,6 +94,7 @@ pub fn init(image: glfw.Image, xhot: c_int, yhot: c_int) SubError!?Cursor {
     try internal.subErrorCheck(SubError);
     return null;
 }
+const SubError = error{ PlatformError, InvalidValue };
 
 /// Returns a cursor with a standard shape, that can be set for a window with glfw.Window.setCursor.
 /// The images for these cursors come from the system cursor theme and their exact appearance will
@@ -145,7 +147,7 @@ pub fn initStandard(shape: Shape) SubError!?Cursor {
 /// This function must not be called from a callback.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn deinit(self: *Cursor) void {
+pub fn deinit(self: Cursor) void {
     c.glfwDestroyCursor(@ptrCast(self.handle));
     internal.errorCheck();
 }

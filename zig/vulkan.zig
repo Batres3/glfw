@@ -7,7 +7,7 @@ const VkSurfaceKHR = _c.VkSurfaceKHR;
 const VkFlags = _c.VkFlags;
 const VkBool32 = _c.VkBool32;
 const VkAllocationCallbacks = _c.VkAllocationCallbacks;
-pub fn supported() bool {
+pub fn vulkan_supported() bool {
     const res = c.glfwVulkanSupported();
     internal.errorCheck();
     return res != 0;

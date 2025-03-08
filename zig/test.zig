@@ -212,14 +212,16 @@ test "glfw window" {
         }
     }
     {
-        // Context
-        try window.makeCurrentContext();
-        if (glfw.getCurrentContext()) |current| {
-            try expect(current.handle == window.handle);
+        // OpenGL
+        if (!glfw.build_options.vulkan) {
+            try glfw.makeCurrentContext(window);
+            if (glfw.getCurrentContext()) |current| {
+                try expect(current.handle == window.handle);
+            }
+            try glfw.swapInterval(1);
+            _ = try glfw.extensionSupported("GL_ARB_gl_spirv");
+            _ = glfw.getProcAddress("glSpecializeShaderARB");
         }
-        try glfw.swapInterval(1);
-        _ = try glfw.OpenGL.extensionSupported("GL_ARB_gl_spirv");
-        _ = try glfw.OpenGL.getProcAddress("glSpecializeShaderARB");
     }
 }
 
@@ -259,8 +261,8 @@ test "glfw vulkan" {
     if (glfw.build_options.vulkan) {
         try glfw.init();
         defer glfw.deinit();
-        if (glfw.Vulkan.supported()) {
-            if (glfw.Vulkan.getRequiredInstanceExtensions()) |extensions| {
+        if (glfw.vulkan_supported()) {
+            if (glfw.getRequiredInstanceExtensions()) |extensions| {
                 for (extensions) |extension| {
                     _ = extension;
                 }

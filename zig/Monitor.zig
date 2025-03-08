@@ -201,7 +201,7 @@ pub fn getName(self: Monitor) []const u8 {
 /// disconnected.
 ///
 /// @thread_safety This function may be called from any thread. Access is not synchronized.
-pub fn setUserPointer(self: *Monitor, pointer: *anyopaque) void {
+pub fn setUserPointer(self: Monitor, pointer: *anyopaque) void {
     self.handle.userPointer = pointer;
 }
 
@@ -274,7 +274,7 @@ pub fn getVideoMode(self: Monitor) SubErrors!?glfw.VideoMode {
 /// @thread_safety This function must only be called from the main thread.
 const GammaError = error{ PlatformError, FeatureUnavailable };
 const SetGammaError = error{ PlatformError, FeatureUnavailable, InvalidValue };
-pub fn setGamma(self: *Monitor, gamma: f32) SetGammaError!void {
+pub fn setGamma(self: Monitor, gamma: f32) SetGammaError!void {
     requireInit();
     if (gamma < 0) return SetGammaError.InvalidValue;
     c.glfwSetGamma(@ptrCast(self.handle), gamma);
@@ -321,7 +321,7 @@ pub fn getGammaRamp(self: Monitor) GammaError!?glfw.GammaRamp {
 /// @pointer_lifetime The specified gamma ramp is copied before this function returns.
 ///
 /// @thread_safety This function must only be called from the main thread.
-pub fn setGammaRamp(self: *Monitor, ramp: glfw.GammaRamp) GammaError!void {
+pub fn setGammaRamp(self: Monitor, ramp: glfw.GammaRamp) GammaError!void {
     requireInit();
 
     if (self.handle.originalRamp.size == 0) {
